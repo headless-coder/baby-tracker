@@ -206,7 +206,14 @@
                         <div>
                             <h3 class="font-bold text-slate-800 text-lg mb-1">Import from CSV File</h3>
                             <p class="text-sm text-slate-500 mb-3">Upload a CSV file containing logs (Columns: <code>category,start_time,duration_minutes,title,amount,unit,notes</code>).</p>
-                            <input type="file" @change="importCSV($event)" accept=".csv" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition">
+                            
+                            <div class="space-y-3">
+                                <input type="file" @change="csvFile = $event.target.files[0]" accept=".csv" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition">
+                                
+                                <button @click="processCSVImport()" :disabled="!csvFile" :class="csvFile ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'" class="font-medium px-4 py-2 rounded-xl text-sm transition flex items-center">
+                                    <i class="fa-solid fa-upload mr-2"></i> Upload and Import CSV
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -247,6 +254,9 @@
                 // Memo state
                 memoText: '',
 
+                // CSV File state
+                csvFile: null,
+
                 async init() {
                     const { data } = await supabaseClient.auth.getUser();
                     this.user = data.user;
@@ -269,7 +279,7 @@
                     this.authError = '';
                     const { error } = await supabaseClient.auth.signUp({ email: this.authEmail, password: this.authPassword });
                     if (error) this.authError = error.message;
-                    else alert('Registration successful! Check your email if confirmation is required or sign in.');
+                    else alert('Registration successful! You can now sign in.');
                 },
 
                 async logout() {
@@ -365,7 +375,7 @@
                     return new Date(dateStr).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                 },
 
-                // CSV Export & Import
+                // CSV Export & Import Workflow
                 exportCSV() {
                     let csv = 'category,start_time,duration_minutes,title,amount,unit,notes\n';
                     this.logs.forEach(l => {
@@ -379,9 +389,9 @@
                     a.click();
                 },
 
-                importCSV(event) {
-                    const file = event.target.files[0];
-                    if (!file) return;
+                processCSVImport() {
+                    if (!this.csvFile) return alert('Please select a CSV file first.');
+                    
                     const reader = new FileReader();
                     reader.onload = async (e) => {
                         const lines = e.target.result.split('\n').slice(1);
@@ -405,9 +415,10 @@
                             }
                         }
                         alert(`Successfully imported ${count} logs!`);
+                        this.csvFile = null;
                         await this.fetchLogs();
                     };
-                    reader.readAsText(file);
+                    reader.readAsText(this.csvFile);
                 },
 
                 // Render Chart.js analytics
