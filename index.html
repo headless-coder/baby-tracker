@@ -30,7 +30,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-pink-500 bg-clip-text text-transparent">BabyLogs</h1>
-                    <!-- Live Pacific Time Clock -->
+                    <!-- Live Time Clock -->
                     <div class="text-[11px] font-mono text-slate-500" x-text="'Clock (' + currentTimezone + '): ' + liveClock"></div>
                 </div>
             </div>
@@ -106,37 +106,31 @@
                 <div x-show="['all', 'sleep', 'medicine', 'memo'].includes(activeTab)" class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         
-                        <!-- Sleep Logging Card -->
+                        <!-- Manual Sleep Logging Card (No Timer) -->
                         <div class="bg-white p-5 rounded-2xl shadow-sm border border-indigo-100 flex flex-col justify-between">
                             <div>
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="font-semibold text-indigo-900 flex items-center"><i class="fa-solid fa-bed text-indigo-500 mr-2"></i> Sleep Log</span>
-                                    <div class="flex space-x-1 bg-slate-100 p-0.5 rounded-lg text-[10px]">
-                                        <button @click="sleepInputMode = 'timer'" :class="sleepInputMode === 'timer' ? 'bg-white font-bold text-indigo-600 shadow-xs' : 'text-slate-500'" class="px-2 py-0.5 rounded-md">Timer</button>
-                                        <button @click="sleepInputMode = 'manual'" :class="sleepInputMode === 'manual' ? 'bg-white font-bold text-indigo-600 shadow-xs' : 'text-slate-500'" class="px-2 py-0.5 rounded-md">Manual</button>
-                                    </div>
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="font-semibold text-indigo-900 flex items-center"><i class="fa-solid fa-bed text-indigo-500 mr-2"></i> Manual Sleep Log</span>
                                 </div>
 
-                                <!-- Timer Mode -->
-                                <div x-show="sleepInputMode === 'timer'">
-                                    <div class="text-center py-2">
-                                        <span class="text-2xl font-mono font-bold text-indigo-600" x-text="formatTimer(sleepTimerSeconds)">00:00:00</span>
-                                    </div>
-                                </div>
-
-                                <!-- Manual Entry Mode -->
-                                <div x-show="sleepInputMode === 'manual'" class="space-y-2 my-2">
+                                <div class="space-y-3 my-2">
                                     <div>
-                                        <label class="text-[10px] uppercase font-semibold text-slate-400">Start Date & Time (<span x-text="currentTimezone"></span>)</label>
-                                        <input type="datetime-local" x-model="manualSleepStart" class="w-full text-xs px-2 py-1 border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <label class="text-[10px] uppercase font-semibold text-slate-400">Start Date & Time (<span x-text="currentTimezone"></span>)</label>
+                                            <div class="flex items-center space-x-1">
+                                                <input type="checkbox" id="useCurrentStart" @change="toggleCurrentTime($event)" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                                <label for="useCurrentStart" class="text-[11px] text-indigo-600 font-medium cursor-pointer">Use Current Time</label>
+                                            </div>
+                                        </div>
+                                        <input type="datetime-local" x-model="manualSleepStart" class="w-full text-xs px-2 py-1.5 border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500">
                                     </div>
-                                    <div class="flex items-center space-x-2 my-1">
+                                    <div class="flex items-center space-x-2">
                                         <input type="checkbox" id="isRunningEnd" x-model="manualSleepIsRunning" class="rounded text-indigo-600 focus:ring-indigo-500">
                                         <label for="isRunningEnd" class="text-xs text-indigo-700 font-medium cursor-pointer">Currently Running (End Later)</label>
                                     </div>
                                     <div x-show="!manualSleepIsRunning">
                                         <label class="text-[10px] uppercase font-semibold text-slate-400">End Date & Time (<span x-text="currentTimezone"></span>)</label>
-                                        <input type="datetime-local" x-model="manualSleepEnd" class="w-full text-xs px-2 py-1 border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                        <input type="datetime-local" x-model="manualSleepEnd" class="w-full text-xs px-2 py-1.5 border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500">
                                     </div>
                                 </div>
 
@@ -144,20 +138,7 @@
                             </div>
 
                             <div class="pt-2">
-                                <template x-if="sleepInputMode === 'timer'">
-                                    <div>
-                                        <button x-show="!isSleeping && !runningSleepLog" @click="startSleepTimer()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2 rounded-xl transition">Start Sleep</button>
-                                        <button x-show="isSleeping" @click="stopSleepTimer()" class="w-full bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold py-2 rounded-xl transition animate-pulse">Stop & Save</button>
-                                        <template x-if="!isSleeping && runningSleepLog">
-                                            <div class="text-center p-2 bg-amber-50 border border-amber-200 rounded-xl">
-                                                <p class="text-[11px] text-amber-800 font-medium">A sleep timer is already active below.</p>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
-                                <template x-if="sleepInputMode === 'manual'">
-                                    <button @click="saveManualSleep()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2 rounded-xl transition" x-text="manualSleepIsRunning ? 'Start Running Sleep' : 'Save Sleep Entry'"></button>
-                                </template>
+                                <button @click="saveManualSleep()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2 rounded-xl transition" x-text="manualSleepIsRunning ? 'Start Running Sleep' : 'Save Sleep Entry'"></button>
                             </div>
                         </div>
 
@@ -239,7 +220,6 @@
                                                     <span class="text-[10px] bg-rose-500 text-white font-bold px-2 py-0.5 rounded-full animate-pulse">Running Now</span>
                                                 </template>
                                             </div>
-                                            <!-- Detailed Start Time, End Time & Duration (Hours & Minutes format) -->
                                             <template x-if="log.category === 'sleep'">
                                                 <div class="text-xs text-indigo-600 font-medium">
                                                     <span x-text="formatTimeInTZ(log.start_time)"></span> – 
@@ -275,7 +255,6 @@
 
                 <!-- TAB: SLEEP ANALYTICS CHART & AVERAGES -->
                 <div x-show="activeTab === 'sleep_stats'" class="space-y-6">
-                    <!-- Average Daily Sleep KPI Cards -->
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <div class="bg-white p-4 rounded-2xl shadow-sm border border-indigo-100">
                             <div class="text-[11px] font-semibold text-slate-400 uppercase">Avg Sleep (Last 7 Days)</div>
@@ -295,12 +274,12 @@
                         </div>
                     </div>
 
-                    <!-- Stacked Sleep Chart -->
-                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-amber-100">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+                    <!-- Stacked Sleep Chart & Custom Legend -->
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-amber-100 space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div>
                                 <h3 class="font-bold text-slate-800">7-Day Stacked Sleep Duration Trend</h3>
-                                <p class="text-xs text-slate-400">Color-coded by session length (🟢 &ge;8h, 🔵 5-8h, 🟡 1-5h, 🩷 &lt;1h)</p>
+                                <p class="text-xs text-slate-400">Color-coded by session length</p>
                             </div>
                             <div class="flex items-center space-x-2">
                                 <button @click="shiftDays(-1); renderSleepChart()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition">
@@ -313,6 +292,14 @@
                                     Next 1 Day <i class="fa-solid fa-chevron-right ml-1"></i>
                                 </button>
                             </div>
+                        </div>
+
+                        <!-- Custom Legend with Circular Swatches -->
+                        <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-600 pt-1 border-t border-slate-100">
+                            <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#34d399] inline-block"></span><span>&ge; 8 hours (Green)</span></div>
+                            <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#60a5fa] inline-block"></span><span>4 to 8 hours (Blue)</span></div>
+                            <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#fbbf24] inline-block"></span><span>1 to 4 hours (Yellow)</span></div>
+                            <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#f472b6] inline-block"></span><span>&lt; 1 hour (Light Pink)</span></div>
                         </div>
 
                         <div class="relative h-80">
@@ -524,20 +511,15 @@
                 activeTab: 'all',
                 logs: [],
                 
-                // Timezone configuration (default to Pacific Time)
+                // Timezone configuration
                 currentTimezone: localStorage.getItem('baby_tz') || 'America/Los_Angeles',
                 liveClock: '',
 
-                // Sleep Timer & Manual State
-                sleepInputMode: 'timer',
-                isSleeping: false,
-                sleepTimerSeconds: 0,
-                sleepInterval: null,
-                sleepStartTime: null,
-                sleepNote: '',
+                // Manual Sleep State
                 manualSleepStart: '',
                 manualSleepEnd: '',
                 manualSleepIsRunning: false,
+                sleepNote: '',
 
                 // Medicine form state
                 medTitle: '',
@@ -567,6 +549,21 @@
 
                 saveTimezonePreference() {
                     localStorage.setItem('baby_tz', this.currentTimezone);
+                },
+
+                toggleCurrentTime(event) {
+                    if (event.target.checked) {
+                        try {
+                            const now = new Date();
+                            const tzDate = new Date(now.toLocaleString('en-US', { timeZone: this.currentTimezone }));
+                            const pad = (n) => String(n).padStart(2, '0');
+                            this.manualSleepStart = `${tzDate.getFullYear()}-${pad(tzDate.getMonth()+1)}-${pad(tzDate.getDate())}T${pad(tzDate.getHours())}:${pad(tzDate.getMinutes())}`;
+                        } catch (e) {
+                            this.manualSleepStart = new Date().toISOString().slice(0, 16);
+                        }
+                    } else {
+                        this.manualSleepStart = '';
+                    }
                 },
 
                 get runningSleepLog() {
@@ -628,7 +625,6 @@
                     return list;
                 },
 
-                // Average Daily Sleep Calculations
                 get avgSleep7Days() { return this.calculateAverageSleepDays(7); },
                 get avgSleep30Days() { return this.calculateAverageSleepDays(30); },
                 get avgSleepYear() { return this.calculateAverageSleepDays(365); },
@@ -661,7 +657,6 @@
                 },
 
                 async init() {
-                    // Start live clock ticker
                     setInterval(() => {
                         try {
                             this.liveClock = new Date().toLocaleTimeString([], { timeZone: this.currentTimezone, hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -705,39 +700,6 @@
                         .select('*')
                         .order('start_time', { ascending: false });
                     if (!error) this.logs = data || [];
-                },
-
-                // Sleep Timer functions
-                startSleepTimer() {
-                    if (this.runningSleepLog) {
-                        return alert('A sleep log is already running! Please stop the active sleep session before starting a new one.');
-                    }
-                    this.isSleeping = true;
-                    this.sleepStartTime = new Date();
-                    this.sleepTimerSeconds = 0;
-                    this.sleepInterval = setInterval(() => {
-                        this.sleepTimerSeconds++;
-                    }, 1000);
-                },
-
-                async stopSleepTimer() {
-                    clearInterval(this.sleepInterval);
-                    const endTime = new Date();
-                    const durationMinutes = Math.round(this.sleepTimerSeconds / 60);
-
-                    await supabaseClient.from('baby_logs').insert([{
-                        user_id: this.user.id,
-                        category: 'sleep',
-                        start_time: this.sleepStartTime.toISOString(),
-                        end_time: endTime.toISOString(),
-                        duration_minutes: durationMinutes > 0 ? durationMinutes : 1,
-                        notes: this.sleepNote
-                    }]);
-
-                    this.isSleeping = false;
-                    this.sleepTimerSeconds = 0;
-                    this.sleepNote = '';
-                    await this.fetchLogs();
                 },
 
                 // Manual Sleep Entry
@@ -789,13 +751,6 @@
                     await this.fetchLogs();
                 },
 
-                formatTimer(totalSecs) {
-                    const hrs = Math.floor(totalSecs / 3600).toString().padStart(2, '0');
-                    const mins = Math.floor((totalSecs % 3600) / 60).toString().padStart(2, '0');
-                    const secs = (totalSecs % 60).toString().padStart(2, '0');
-                    return `${hrs}:${mins}:${secs}`;
-                },
-
                 formatDurationHoursMins(totalMins) {
                     const h = Math.floor(totalMins / 60);
                     const m = totalMins % 60;
@@ -830,9 +785,7 @@
                     await this.fetchLogs();
                 },
 
-                // Edit Log Modal
                 openEditModal(log) {
-                    // Convert UTC timestamp to local datetime-local format for the selected timezone
                     const toLocalDateTimeStr = (utcStr) => {
                         if (!utcStr) return '';
                         try {
@@ -927,7 +880,6 @@
                     this.chartOffsetDays = 0;
                 },
 
-                // CSV Export & Import
                 exportCSV() {
                     let csv = 'category,start_time,end_time,duration_minutes,title,amount,unit,notes\n';
                     this.logs.forEach(l => {
@@ -1024,20 +976,20 @@
                     });
                 },
 
-                // Stacked Color-Coded Sleep Chart Render
+                // Render Stacked Sleep Chart with Hour/Minute Hover Tooltips & Updated Color Logic
                 renderSleepChart() {
                     const ctx = document.getElementById('sleepChart').getContext('2d');
                     if (window.sleepChartInstance) window.sleepChartInstance.destroy();
 
                     const labels = [];
-                    const maxSessionsPerDay = 6; // Max number of sleep sessions to support stacking
+                    const maxSessionsPerDay = 6;
                     const datasets = [];
 
-                    // Create datasets for stacked bars
                     for (let s = 0; s < maxSessionsPerDay; s++) {
                         datasets.push({
                             label: `Session ${s+1}`,
                             data: new Array(7).fill(0),
+                            durationMinsArray: new Array(7).fill(0),
                             backgroundColor: [],
                             borderRadius: 4
                         });
@@ -1056,15 +1008,21 @@
                         
                         daySleeps.forEach((sleep, sIdx) => {
                             if (sIdx < maxSessionsPerDay) {
-                                let durationHours = parseFloat(((sleep.duration_minutes || 0) / 60).toFixed(2));
+                                let totalMins = sleep.duration_minutes || 0;
+                                let durationHours = parseFloat((totalMins / 60).toFixed(2));
                                 datasets[sIdx].data[6 - i] = durationHours;
+                                datasets[sIdx].durationMinsArray[6 - i] = totalMins;
 
-                                // Color coding by session duration
-                                let hours = sleep.duration_minutes / 60;
-                                let color = '#f472b6'; // Light pink for < 1 hour
-                                if (hours >= 8) color = '#34d399';      // Green for >= 8h
-                                else if (hours >= 5) color = '#60a5fa'; // Blue for 5-8h
-                                else if (hours >= 1) color = '#fbbf24'; // Yellow for 1-5h
+                                // Updated Color Coding Logic:
+                                // Green: >= 8h
+                                // Blue: 4h to < 8h
+                                // Yellow: 1h to < 4h
+                                // Light Pink: < 1h
+                                let hours = totalMins / 60;
+                                let color = '#f472b6'; // Light Pink (< 1h)
+                                if (hours >= 8) color = '#34d399';      // Green (>= 8h)
+                                else if (hours >= 4) color = '#60a5fa'; // Blue (4h to <8h)
+                                else if (hours >= 1) color = '#fbbf24'; // Yellow (1h to <4h)
 
                                 datasets[sIdx].backgroundColor[6 - i] = color;
                             }
@@ -1081,7 +1039,20 @@
                             responsive: true, 
                             maintainAspectRatio: false,
                             plugins: {
-                                legend: { display: false }
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const datasetIndex = context.datasetIndex;
+                                            const dataIndex = context.dataIndex;
+                                            const mins = window.sleepChartInstance.data.datasets[datasetIndex].durationMinsArray[dataIndex];
+                                            if (!mins) return '';
+                                            const h = Math.floor(mins / 60);
+                                            const m = mins % 60;
+                                            return ` Duration: ${h} hrs ${m} mins`;
+                                        }
+                                    }
+                                }
                             },
                             scales: {
                                 x: { stacked: true },
