@@ -23,12 +23,16 @@
 
     <!-- Header / Navbar -->
     <header class="bg-white border-b border-amber-100 shadow-sm sticky top-0 z-50">
-        <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center space-x-2">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
                 <div class="bg-indigo-100 text-indigo-600 p-2 rounded-xl">
                     <i class="fa-solid fa-baby text-xl"></i>
                 </div>
-                <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-pink-500 bg-clip-text text-transparent">BabyLogs</h1>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-pink-500 bg-clip-text text-transparent">BabyLogs</h1>
+                    <!-- Live Pacific Time Clock -->
+                    <div class="text-[11px] font-mono text-slate-500" x-text="'Clock (' + currentTimezone + '): ' + liveClock"></div>
+                </div>
             </div>
             <template x-if="user">
                 <div class="flex items-center space-x-4">
@@ -40,7 +44,7 @@
     </header>
 
     <!-- Main Content Container -->
-    <main class="max-w-5xl mx-auto px-4 py-6 flex-1 w-full">
+    <main class="max-w-6xl mx-auto px-4 py-6 flex-1 w-full">
 
         <!-- AUTH SCREEN -->
         <template x-if="!user">
@@ -90,12 +94,15 @@
                     <button @click="activeTab = 'med_stats'; $nextTick(() => renderMedChart())" :class="activeTab === 'med_stats' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
                         <i class="fa-solid fa-chart-pie mr-1.5"></i> Medicine Analytics
                     </button>
+                    <button @click="activeTab = 'settings'" :class="activeTab === 'settings' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
+                        <i class="fa-solid fa-gear mr-1.5"></i> Settings
+                    </button>
                     <button @click="activeTab = 'import'" :class="activeTab === 'import' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
                         <i class="fa-solid fa-file-csv mr-1.5"></i> CSV Import/Export
                     </button>
                 </div>
 
-                <!-- QUICK LOG CARDS SECTION (Visible on All, Sleep, Medicine, & Memo Tabs) -->
+                <!-- QUICK LOG CARDS SECTION -->
                 <div x-show="['all', 'sleep', 'medicine', 'memo'].includes(activeTab)" class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         
@@ -120,7 +127,7 @@
                                 <!-- Manual Entry Mode -->
                                 <div x-show="sleepInputMode === 'manual'" class="space-y-2 my-2">
                                     <div>
-                                        <label class="text-[10px] uppercase font-semibold text-slate-400">Start Date & Time</label>
+                                        <label class="text-[10px] uppercase font-semibold text-slate-400">Start Date & Time (<span x-text="currentTimezone"></span>)</label>
                                         <input type="datetime-local" x-model="manualSleepStart" class="w-full text-xs px-2 py-1 border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500">
                                     </div>
                                     <div class="flex items-center space-x-2 my-1">
@@ -128,7 +135,7 @@
                                         <label for="isRunningEnd" class="text-xs text-indigo-700 font-medium cursor-pointer">Currently Running (End Later)</label>
                                     </div>
                                     <div x-show="!manualSleepIsRunning">
-                                        <label class="text-[10px] uppercase font-semibold text-slate-400">End Date & Time</label>
+                                        <label class="text-[10px] uppercase font-semibold text-slate-400">End Date & Time (<span x-text="currentTimezone"></span>)</label>
                                         <input type="datetime-local" x-model="manualSleepEnd" class="w-full text-xs px-2 py-1 border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500">
                                     </div>
                                 </div>
@@ -177,7 +184,7 @@
                         </div>
                     </div>
 
-                    <!-- Memo Specific Filter Controls (Shown on Memo Tab) -->
+                    <!-- Memo Filter Controls -->
                     <template x-if="activeTab === 'memo'">
                         <div class="bg-white p-4 rounded-2xl shadow-sm border border-amber-100 flex flex-col sm:flex-row items-center justify-between gap-3">
                             <span class="font-bold text-slate-800 text-sm">Filter & Sort Memos</span>
@@ -199,7 +206,6 @@
                                 <span class="text-xs font-normal text-slate-400" x-text="'(' + filteredLogs.length + ' entries)'"></span>
                             </h3>
 
-                            <!-- Delete All Logs per Category Button -->
                             <template x-if="['sleep', 'medicine', 'memo'].includes(activeTab) && filteredLogs.length > 0">
                                 <button @click="deleteAllCategoryLogs(activeTab)" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-3 py-1.5 rounded-xl font-medium transition flex items-center">
                                     <i class="fa-solid fa-trash-can mr-1.5"></i> Delete All <span class="capitalize ml-1" x-text="activeTab"></span> Logs
@@ -233,13 +239,13 @@
                                                     <span class="text-[10px] bg-rose-500 text-white font-bold px-2 py-0.5 rounded-full animate-pulse">Running Now</span>
                                                 </template>
                                             </div>
-                                            <!-- Detailed Start Time, End Time & Duration for Sleep -->
+                                            <!-- Detailed Start Time, End Time & Duration (Hours & Minutes format) -->
                                             <template x-if="log.category === 'sleep'">
                                                 <div class="text-xs text-indigo-600 font-medium">
-                                                    <span x-text="formatTimeOnly(log.start_time)"></span> – 
-                                                    <span x-text="log.end_time ? formatTimeOnly(log.end_time) : 'Active'"></span> 
+                                                    <span x-text="formatTimeInTZ(log.start_time)"></span> – 
+                                                    <span x-text="log.end_time ? formatTimeInTZ(log.end_time) : 'Active'"></span> 
                                                     <template x-if="log.end_time">
-                                                        <span>(<span x-text="(log.duration_minutes / 60).toFixed(1) + ' hrs / ' + log.duration_minutes + ' mins'"></span>)</span>
+                                                        <span>(<span x-text="formatDurationHoursMins(log.duration_minutes)"></span>)</span>
                                                     </template>
                                                 </div>
                                             </template>
@@ -252,16 +258,13 @@
                                         </div>
                                     </div>
                                     <div class="flex items-center space-x-2">
-                                        <!-- Stop Running Sleep Button -->
                                         <template x-if="!log.end_time && log.category === 'sleep'">
                                             <button @click="stopRunningLog(log)" class="bg-rose-500 hover:bg-rose-600 text-white text-xs px-2.5 py-1 rounded-lg font-semibold transition mr-2">Stop Sleep</button>
                                         </template>
                                         
-                                        <span class="text-xs text-slate-400 mr-1" x-text="formatDate(log.start_time || log.created_at)"></span>
+                                        <span class="text-xs text-slate-400 mr-1" x-text="formatDateInTZ(log.start_time || log.created_at)"></span>
                                         
-                                        <!-- Edit Log Button -->
                                         <button @click="openEditModal(log)" class="text-slate-400 hover:text-indigo-600 p-1 transition" title="Edit Log"><i class="fa-solid fa-pen-to-square"></i></button>
-                                        <!-- Delete Log Button -->
                                         <button @click="deleteLog(log.id)" class="text-slate-300 hover:text-rose-500 p-1 transition" title="Delete Log"><i class="fa-solid fa-trash-can"></i></button>
                                     </div>
                                 </div>
@@ -270,20 +273,40 @@
                     </div>
                 </div>
 
-                <!-- TAB: SLEEP ANALYTICS CHART -->
+                <!-- TAB: SLEEP ANALYTICS CHART & AVERAGES -->
                 <div x-show="activeTab === 'sleep_stats'" class="space-y-6">
+                    <!-- Average Daily Sleep KPI Cards -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-indigo-100">
+                            <div class="text-[11px] font-semibold text-slate-400 uppercase">Avg Sleep (Last 7 Days)</div>
+                            <div class="text-xl font-bold text-indigo-600 mt-1" x-text="avgSleep7Days"></div>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-indigo-100">
+                            <div class="text-[11px] font-semibold text-slate-400 uppercase">Avg Sleep (Last 30 Days)</div>
+                            <div class="text-xl font-bold text-indigo-600 mt-1" x-text="avgSleep30Days"></div>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-indigo-100">
+                            <div class="text-[11px] font-semibold text-slate-400 uppercase">Avg Sleep (Last Year)</div>
+                            <div class="text-xl font-bold text-indigo-600 mt-1" x-text="avgSleepYear"></div>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-indigo-100">
+                            <div class="text-[11px] font-semibold text-slate-400 uppercase">Avg Sleep (All Time)</div>
+                            <div class="text-xl font-bold text-indigo-600 mt-1" x-text="avgSleepAll"></div>
+                        </div>
+                    </div>
+
+                    <!-- Stacked Sleep Chart -->
                     <div class="bg-white p-5 rounded-2xl shadow-sm border border-amber-100">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
                             <div>
-                                <h3 class="font-bold text-slate-800">7-Day Sleep Duration Trend</h3>
-                                <p class="text-xs text-slate-400">Total daily sleep duration in hours (0.1 hr increments)</p>
+                                <h3 class="font-bold text-slate-800">7-Day Stacked Sleep Duration Trend</h3>
+                                <p class="text-xs text-slate-400">Color-coded by session length (🟢 &ge;8h, 🔵 5-8h, 🟡 1-5h, 🩷 &lt;1h)</p>
                             </div>
-                            <!-- Timeframe Shift Navigation Toggle -->
                             <div class="flex items-center space-x-2">
                                 <button @click="shiftDays(-1); renderSleepChart()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition">
                                     <i class="fa-solid fa-chevron-left mr-1"></i> Previous 1 Day
                                 </button>
-                                <button @click="resetDays(); renderSleepChart()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-2.5 py-1.5 rounded-lg font-medium transition" title="Reset to today">
+                                <button @click="resetDays(); renderSleepChart()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-2.5 py-1.5 rounded-lg font-medium transition">
                                     Today
                                 </button>
                                 <button @click="shiftDays(1); renderSleepChart()" :disabled="chartOffsetDays >= 0" :class="chartOffsetDays >= 0 ? 'opacity-40 cursor-not-allowed' : ''" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition">
@@ -292,7 +315,7 @@
                             </div>
                         </div>
 
-                        <div class="relative h-72">
+                        <div class="relative h-80">
                             <canvas id="sleepChart"></canvas>
                         </div>
                     </div>
@@ -300,7 +323,6 @@
 
                 <!-- TAB: MEDICINE ANALYTICS & DETAILED TABLE -->
                 <div x-show="activeTab === 'med_stats'" class="space-y-6">
-                    <!-- KPI Cards -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div class="bg-white p-4 rounded-2xl shadow-sm border border-emerald-100">
                             <div class="text-xs font-semibold text-slate-400 uppercase">Total Doses Logged</div>
@@ -316,7 +338,6 @@
                         </div>
                     </div>
 
-                    <!-- Medicine Breakdown Chart -->
                     <div class="bg-white p-5 rounded-2xl shadow-sm border border-emerald-100">
                         <h3 class="font-bold text-slate-800 mb-4">Medication Dose Counts</h3>
                         <div class="relative h-64">
@@ -324,7 +345,6 @@
                         </div>
                     </div>
 
-                    <!-- Medicine Filterable & Sortable Listing Table -->
                     <div class="bg-white p-5 rounded-2xl shadow-sm border border-emerald-100">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                             <h3 class="font-bold text-slate-800">Medicine Activity Log</h3>
@@ -354,7 +374,7 @@
                                 <tbody>
                                     <template x-for="med in processedMedLogs" :key="med.id">
                                         <tr class="border-b border-slate-100 hover:bg-emerald-50/30 transition">
-                                            <td class="p-3 whitespace-nowrap" x-text="formatDate(med.start_time || med.created_at)"></td>
+                                            <td class="p-3 whitespace-nowrap" x-text="formatDateInTZ(med.start_time || med.created_at)"></td>
                                             <td class="p-3 font-semibold text-slate-800" x-text="med.title || 'Medicine'"></td>
                                             <td class="p-3 font-mono font-medium text-emerald-600" x-text="med.amount ? (med.amount + ' ' + (med.unit || 'ml')) : 'N/A'"></td>
                                             <td class="p-3 text-slate-500 italic" x-text="med.notes || '-'"></td>
@@ -375,6 +395,26 @@
                     </div>
                 </div>
 
+                <!-- TAB: SETTINGS (TIMEZONE CONFIG) -->
+                <div x-show="activeTab === 'settings'" class="space-y-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-amber-100 max-w-lg space-y-4">
+                        <h3 class="font-bold text-slate-800 text-lg">App Settings</h3>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Timezone Preference</label>
+                            <select x-model="currentTimezone" @change="saveTimezonePreference()" class="w-full text-xs px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="America/Los_Angeles">Pacific Time (PT - America/Los_Angeles)</option>
+                                <option value="America/New_York">Eastern Time (ET - America/New_York)</option>
+                                <option value="America/Chicago">Central Time (CT - America/Chicago)</option>
+                                <option value="America/Denver">Mountain Time (MT - America/Denver)</option>
+                                <option value="Europe/London">Greenwich Mean Time (GMT - London)</option>
+                                <option value="Asia/Taipei">Taipei / Hong Kong (CST)</option>
+                                <option value="UTC">UTC</option>
+                            </select>
+                            <p class="text-[11px] text-slate-400 mt-1">All time inputs and log displays will automatically adjust to this timezone.</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- TAB: CSV IMPORT / EXPORT -->
                 <div x-show="activeTab === 'import'" class="space-y-6">
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-amber-100 space-y-6">
@@ -389,10 +429,8 @@
                         <div>
                             <h3 class="font-bold text-slate-800 text-lg mb-1">Method 1: Upload Nara Baby CSV File</h3>
                             <p class="text-sm text-slate-500 mb-3">Select your official Nara Baby export CSV file.</p>
-                            
                             <div class="space-y-3">
                                 <input type="file" @change="csvFile = $event.target.files[0]" accept=".csv" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition">
-                                
                                 <button @click="processCSVFileImport()" :disabled="!csvFile || isImporting" :class="csvFile && !isImporting ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'" class="font-medium px-4 py-2 rounded-xl text-sm transition flex items-center">
                                     <i class="fa-solid fa-upload mr-2"></i> <span x-text="isImporting ? 'Importing File...' : 'Upload and Import CSV File'"></span>
                                 </button>
@@ -402,10 +440,8 @@
                         <div>
                             <h3 class="font-bold text-slate-800 text-lg mb-1">Method 2: Paste Raw CSV Data</h3>
                             <p class="text-sm text-slate-500 mb-3">Open your CSV file in a text editor, copy all text, and paste it below:</p>
-                            
                             <div class="space-y-3">
                                 <textarea x-model="rawCsvText" rows="6" placeholder="Type,Profile Name,Start Date/time,..." class="w-full text-xs font-mono p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-                                
                                 <button @click="processCSVPasteImport()" :disabled="!rawCsvText.trim() || isImporting" :class="rawCsvText.trim() && !isImporting ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'" class="font-medium px-4 py-2 rounded-xl text-sm transition flex items-center">
                                     <i class="fa-solid fa-paste mr-2"></i> <span x-text="isImporting ? 'Importing Pasted Data...' : 'Import Pasted CSV Data'"></span>
                                 </button>
@@ -474,7 +510,6 @@
 
     <!-- Supabase & App Logic Script -->
     <script>
-        // REPLACE THESE WITH YOUR ACTUAL SUPABASE CREDENTIALS FROM STEP 1
         const SUPABASE_URL = 'https://gzrpvwpyeekjyycfalpz.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6cnB2d3B5ZWVranl5Y2ZhbHB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5MjcxODMsImV4cCI6MjEwNzUwMzE4M30.c-HAoPBjw0uC1LxBvD1yPWleWldiAZ6NeFIRTdir7l0';
         
@@ -486,9 +521,13 @@
                 authEmail: '',
                 authPassword: '',
                 authError: '',
-                activeTab: 'all', // Tabs: 'all', 'sleep', 'medicine', 'memo', 'sleep_stats', 'med_stats', 'import'
+                activeTab: 'all',
                 logs: [],
                 
+                // Timezone configuration (default to Pacific Time)
+                currentTimezone: localStorage.getItem('baby_tz') || 'America/Los_Angeles',
+                liveClock: '',
+
                 // Sleep Timer & Manual State
                 sleepInputMode: 'timer',
                 isSleeping: false,
@@ -526,17 +565,17 @@
                 // Chart timeframe offset state
                 chartOffsetDays: 0,
 
+                saveTimezonePreference() {
+                    localStorage.setItem('baby_tz', this.currentTimezone);
+                },
+
                 get runningSleepLog() {
                     return this.logs.find(l => l.category === 'sleep' && !l.end_time);
                 },
 
                 get filteredLogs() {
-                    if (this.activeTab === 'sleep') {
-                        return this.logs.filter(l => l.category === 'sleep');
-                    }
-                    if (this.activeTab === 'medicine') {
-                        return this.logs.filter(l => l.category === 'medicine');
-                    }
+                    if (this.activeTab === 'sleep') return this.logs.filter(l => l.category === 'sleep');
+                    if (this.activeTab === 'medicine') return this.logs.filter(l => l.category === 'medicine');
                     if (this.activeTab === 'memo') {
                         let list = this.logs.filter(l => l.category === 'memo');
                         if (this.memoSearch.trim()) {
@@ -570,7 +609,6 @@
 
                 get processedMedLogs() {
                     let list = [...this.medicineLogs];
-                    
                     if (this.medSearch.trim()) {
                         const q = this.medSearch.toLowerCase();
                         list = list.filter(m => 
@@ -578,7 +616,6 @@
                             (m.notes || '').toLowerCase().includes(q)
                         );
                     }
-
                     if (this.medSortBy === 'date_desc') {
                         list.sort((a, b) => new Date(b.start_time || b.created_at) - new Date(a.start_time || a.created_at));
                     } else if (this.medSortBy === 'date_asc') {
@@ -588,11 +625,51 @@
                     } else if (this.medSortBy === 'amount_desc') {
                         list.sort((a, b) => (b.amount || 0) - (a.amount || 0));
                     }
-
                     return list;
                 },
 
+                // Average Daily Sleep Calculations
+                get avgSleep7Days() { return this.calculateAverageSleepDays(7); },
+                get avgSleep30Days() { return this.calculateAverageSleepDays(30); },
+                get avgSleepYear() { return this.calculateAverageSleepDays(365); },
+                get avgSleepAll() {
+                    const sleepLogs = this.logs.filter(l => l.category === 'sleep' && l.duration_minutes > 0);
+                    if (sleepLogs.length === 0) return '0 hrs 0 mins';
+                    const dates = [...new Set(sleepLogs.map(l => new Date(l.start_time).toISOString().slice(0, 10)))];
+                    const totalMins = sleepLogs.reduce((sum, l) => sum + l.duration_minutes, 0);
+                    const avgMins = Math.round(totalMins / dates.length);
+                    return this.formatDurationHoursMins(avgMins);
+                },
+
+                calculateAverageSleepDays(daysCount) {
+                    let totalMins = 0;
+                    let activeDays = 0;
+                    for (let i = 0; i < daysCount; i++) {
+                        let d = new Date();
+                        d.setDate(d.getDate() - i);
+                        let dateStr = d.toISOString().slice(0, 10);
+                        let dayMins = this.logs
+                            .filter(l => l.category === 'sleep' && l.start_time && l.start_time.startsWith(dateStr))
+                            .reduce((sum, l) => sum + (l.duration_minutes || 0), 0);
+                        if (dayMins > 0) {
+                            totalMins += dayMins;
+                            activeDays++;
+                        }
+                    }
+                    if (activeDays === 0) return '0 hrs 0 mins';
+                    return this.formatDurationHoursMins(Math.round(totalMins / activeDays));
+                },
+
                 async init() {
+                    // Start live clock ticker
+                    setInterval(() => {
+                        try {
+                            this.liveClock = new Date().toLocaleTimeString([], { timeZone: this.currentTimezone, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        } catch (e) {
+                            this.liveClock = new Date().toLocaleTimeString();
+                        }
+                    }, 1000);
+
                     const { data } = await supabaseClient.auth.getUser();
                     this.user = data.user;
                     if (this.user) {
@@ -630,7 +707,7 @@
                     if (!error) this.logs = data || [];
                 },
 
-                // Sleep Timer functions (Enforcing ONLY 1 active running sleep)
+                // Sleep Timer functions
                 startSleepTimer() {
                     if (this.runningSleepLog) {
                         return alert('A sleep log is already running! Please stop the active sleep session before starting a new one.');
@@ -663,13 +740,13 @@
                     await this.fetchLogs();
                 },
 
-                // Manual Sleep Entry (Enforcing ONLY 1 active running sleep)
+                // Manual Sleep Entry
                 async saveManualSleep() {
                     if (!this.manualSleepStart) {
                         return alert('Please select a Start Date & Time.');
                     }
                     if (this.manualSleepIsRunning && this.runningSleepLog) {
-                        return alert('A sleep log is already running! Please stop the active sleep session before starting a new running sleep.');
+                        return alert('A sleep log is already running! Please stop the active sleep session first.');
                     }
 
                     const start = new Date(this.manualSleepStart);
@@ -719,6 +796,13 @@
                     return `${hrs}:${mins}:${secs}`;
                 },
 
+                formatDurationHoursMins(totalMins) {
+                    const h = Math.floor(totalMins / 60);
+                    const m = totalMins % 60;
+                    if (h === 0) return `${m} mins`;
+                    return `${h} hrs ${m} mins`;
+                },
+
                 async saveMedicine() {
                     if (!this.medTitle) return alert('Please enter medicine name');
                     await supabaseClient.from('baby_logs').insert([{
@@ -748,11 +832,24 @@
 
                 // Edit Log Modal
                 openEditModal(log) {
+                    // Convert UTC timestamp to local datetime-local format for the selected timezone
+                    const toLocalDateTimeStr = (utcStr) => {
+                        if (!utcStr) return '';
+                        try {
+                            const d = new Date(utcStr);
+                            const tzDate = new Date(d.toLocaleString('en-US', { timeZone: this.currentTimezone }));
+                            const pad = (n) => String(n).padStart(2, '0');
+                            return `${tzDate.getFullYear()}-${pad(tzDate.getMonth()+1)}-${pad(tzDate.getDate())}T${pad(tzDate.getHours())}:${pad(tzDate.getMinutes())}`;
+                        } catch (e) {
+                            return utcStr.slice(0, 16);
+                        }
+                    };
+
                     this.editingLog = {
                         id: log.id,
                         category: log.category,
-                        start_time: log.start_time ? new Date(log.start_time).toISOString().slice(0, 16) : '',
-                        end_time: log.end_time ? new Date(log.end_time).toISOString().slice(0, 16) : '',
+                        start_time: toLocalDateTimeStr(log.start_time),
+                        end_time: toLocalDateTimeStr(log.end_time),
                         title: log.title || '',
                         amount: log.amount || 0,
                         unit: log.unit || 'ml',
@@ -791,16 +888,9 @@
                     await this.fetchLogs();
                 },
 
-                // Bulk Delete Category Logs
                 async deleteAllCategoryLogs(category) {
-                    if (!confirm(`Are you sure you want to PERMANENTLY delete ALL ${category.toUpperCase()} logs? This action cannot be undone.`)) return;
-                    
-                    await supabaseClient
-                        .from('baby_logs')
-                        .delete()
-                        .eq('user_id', this.user.id)
-                        .eq('category', category);
-                        
+                    if (!confirm(`Are you sure you want to PERMANENTLY delete ALL ${category.toUpperCase()} logs?`)) return;
+                    await supabaseClient.from('baby_logs').delete().eq('user_id', this.user.id).eq('category', category);
                     await this.fetchLogs();
                 },
 
@@ -810,17 +900,24 @@
                     return '';
                 },
 
-                formatDate(dateStr) {
+                formatDateInTZ(dateStr) {
                     if (!dateStr) return '';
-                    return new Date(dateStr).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    try {
+                        return new Date(dateStr).toLocaleString([], { timeZone: this.currentTimezone, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    } catch (e) {
+                        return new Date(dateStr).toLocaleString();
+                    }
                 },
 
-                formatTimeOnly(dateStr) {
+                formatTimeInTZ(dateStr) {
                     if (!dateStr) return 'N/A';
-                    return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    try {
+                        return new Date(dateStr).toLocaleTimeString([], { timeZone: this.currentTimezone, hour: '2-digit', minute: '2-digit' });
+                    } catch (e) {
+                        return new Date(dateStr).toLocaleTimeString();
+                    }
                 },
 
-                // Shiftable 7-day chart timeframe logic
                 shiftDays(delta) {
                     this.chartOffsetDays += delta;
                     if (this.chartOffsetDays > 0) this.chartOffsetDays = 0;
@@ -856,14 +953,12 @@
 
                 executeCSVParse(inputSource) {
                     this.isImporting = true;
-
                     Papa.parse(inputSource, {
                         header: true,
                         skipEmptyLines: true,
                         complete: async (results) => {
                             const rows = results.data;
                             let count = 0;
-
                             for (let row of rows) {
                                 let type = (row['Type'] || row['category'] || '').trim().toLowerCase();
                                 let startTime = row['Start Date/time'] || row['start_time'] ? new Date(row['Start Date/time'] || row['start_time']).toISOString() : null;
@@ -900,9 +995,7 @@
                                     }
                                 } else {
                                     category = 'memo';
-                                    if (!note) {
-                                        note = `[${row['Type'] || 'Memo'}]`;
-                                    }
+                                    if (!note) note = `[${row['Type'] || 'Memo'}]`;
                                 }
 
                                 await supabaseClient.from('baby_logs').insert([{
@@ -918,7 +1011,6 @@
                                 }]);
                                 count++;
                             }
-
                             alert(`Successfully imported ${count} logs!`);
                             this.isImporting = false;
                             this.csvFile = null;
@@ -932,47 +1024,72 @@
                     });
                 },
 
-                // Render Chart.js Sleep Duration (Hours, 0.1 increments, 7-day shifting)
+                // Stacked Color-Coded Sleep Chart Render
                 renderSleepChart() {
                     const ctx = document.getElementById('sleepChart').getContext('2d');
                     if (window.sleepChartInstance) window.sleepChartInstance.destroy();
 
-                    const dates = [];
-                    const dailySleepHours = [];
+                    const labels = [];
+                    const maxSessionsPerDay = 6; // Max number of sleep sessions to support stacking
+                    const datasets = [];
+
+                    // Create datasets for stacked bars
+                    for (let s = 0; s < maxSessionsPerDay; s++) {
+                        datasets.push({
+                            label: `Session ${s+1}`,
+                            data: new Array(7).fill(0),
+                            backgroundColor: [],
+                            borderRadius: 4
+                        });
+                    }
 
                     for (let i = 6; i >= 0; i--) {
                         let d = new Date();
                         d.setDate(d.getDate() + this.chartOffsetDays - i);
                         let dateStr = d.toISOString().slice(0, 10);
-                        dates.push(d.toLocaleDateString([], { month: 'short', day: 'numeric' }));
+                        
+                        let dayName = d.toLocaleDateString([], { weekday: 'short', timeZone: this.currentTimezone });
+                        let dateFormatted = d.toLocaleDateString([], { month: 'short', day: 'numeric', timeZone: this.currentTimezone });
+                        labels.push(`${dayName}, ${dateFormatted}`);
 
-                        let daySleepMinutes = this.logs
-                            .filter(l => l.category === 'sleep' && l.start_time && l.start_time.startsWith(dateStr))
-                            .reduce((sum, l) => sum + (l.duration_minutes || 0), 0);
+                        let daySleeps = this.logs.filter(l => l.category === 'sleep' && l.start_time && l.start_time.startsWith(dateStr));
+                        
+                        daySleeps.forEach((sleep, sIdx) => {
+                            if (sIdx < maxSessionsPerDay) {
+                                let durationHours = parseFloat(((sleep.duration_minutes || 0) / 60).toFixed(2));
+                                datasets[sIdx].data[6 - i] = durationHours;
 
-                        let hours = parseFloat((daySleepMinutes / 60).toFixed(1));
-                        dailySleepHours.push(hours);
+                                // Color coding by session duration
+                                let hours = sleep.duration_minutes / 60;
+                                let color = '#f472b6'; // Light pink for < 1 hour
+                                if (hours >= 8) color = '#34d399';      // Green for >= 8h
+                                else if (hours >= 5) color = '#60a5fa'; // Blue for 5-8h
+                                else if (hours >= 1) color = '#fbbf24'; // Yellow for 1-5h
+
+                                datasets[sIdx].backgroundColor[6 - i] = color;
+                            }
+                        });
                     }
 
                     window.sleepChartInstance = new Chart(ctx, {
                         type: 'bar',
                         data: {
-                            labels: dates,
-                            datasets: [{
-                                label: 'Total Sleep (Hours)',
-                                data: dailySleepHours,
-                                backgroundColor: '#818cf8',
-                                borderRadius: 8
-                            }]
+                            labels: labels,
+                            datasets: datasets.filter(ds => ds.data.some(val => val > 0))
                         },
                         options: { 
                             responsive: true, 
                             maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
                             scales: {
+                                x: { stacked: true },
                                 y: {
+                                    stacked: true,
                                     beginAtZero: true,
                                     ticks: {
-                                        stepSize: 0.1,
+                                        stepSize: 0.5,
                                         callback: function(value) {
                                             return value.toFixed(1) + ' h';
                                         }
@@ -987,7 +1104,6 @@
                     });
                 },
 
-                // Render Medicine Dose Analytics Chart
                 renderMedChart() {
                     const ctx = document.getElementById('medChart').getContext('2d');
                     if (window.medChartInstance) window.medChartInstance.destroy();
