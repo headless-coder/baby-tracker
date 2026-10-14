@@ -10,8 +10,6 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- PapaParse for robust CSV parsing -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -137,7 +135,7 @@
                             <span class="text-xs font-normal text-slate-400" x-text="logs.length + ' total entries'"></span>
                         </h3>
                         <template x-if="logs.length === 0">
-                            <p class="text-sm text-slate-400 text-center py-8">No logs recorded yet. Use the quick cards above or import your CSV file!</p>
+                            <p class="text-sm text-slate-400 text-center py-8">No logs recorded yet. Use the quick cards above to start tracking!</p>
                         </template>
                         <div class="space-y-3">
                             <template x-for="log in logs" :key="log.id">
@@ -206,14 +204,14 @@
                         </div>
                         <hr class="border-amber-100">
                         <div>
-                            <h3 class="font-bold text-slate-800 text-lg mb-1">Import Nara Baby CSV Export</h3>
-                            <p class="text-sm text-slate-500 mb-3">Upload your official Nara Baby CSV file backup (supports Sleep, Medical, Notes, etc.).</p>
+                            <h3 class="font-bold text-slate-800 text-lg mb-1">Import from CSV File</h3>
+                            <p class="text-sm text-slate-500 mb-3">Upload a CSV file containing logs (Columns: <code>category,start_time,duration_minutes,title,amount,unit,notes</code>).</p>
                             
                             <div class="space-y-3">
                                 <input type="file" @change="csvFile = $event.target.files[0]" accept=".csv" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition">
                                 
-                                <button @click="processCSVImport()" :disabled="!csvFile || isImporting" :class="csvFile && !isImporting ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'" class="font-medium px-4 py-2 rounded-xl text-sm transition flex items-center">
-                                    <i class="fa-solid fa-upload mr-2"></i> <span x-text="isImporting ? 'Importing CSV...' : 'Upload and Import CSV'"></span>
+                                <button @click="processCSVImport()" :disabled="!csvFile" :class="csvFile ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'" class="font-medium px-4 py-2 rounded-xl text-sm transition flex items-center">
+                                    <i class="fa-solid fa-upload mr-2"></i> Upload and Import CSV
                                 </button>
                             </div>
                         </div>
@@ -258,7 +256,6 @@
 
                 // CSV File state
                 csvFile: null,
-                isImporting: false,
 
                 async init() {
                     const { data } = await supabaseClient.auth.getUser();
@@ -313,7 +310,7 @@
                     const endTime = new Date();
                     const durationMinutes = Math.round(this.sleepTimerSeconds / 60);
 
-                    await supabaseClient.from('baby_logs'].insert([{
+                    await supabaseClient.from('baby_logs').insert([{
                         user_id: this.user.id,
                         category: 'sleep',
                         start_time: this.sleepStartTime.toISOString(),
@@ -378,7 +375,7 @@
                     return new Date(dateStr).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                 },
 
-                // CSV Export & Import Workflow (Compatible with Nara Baby Exports)
+                // CSV Export & Import Workflow
                 exportCSV() {
                     let csv = 'category,start_time,duration_minutes,title,amount,unit,notes\n';
                     this.logs.forEach(l => {
@@ -394,82 +391,34 @@
 
                 processCSVImport() {
                     if (!this.csvFile) return alert('Please select a CSV file first.');
-                    this.isImporting = true;
-
-                    Papa.parse(this.csvFile, {
-                        header: true,
-                        skipEmptyLines: true,
-                        complete: async (results) => {
-                            const rows = results.data;
-                            let count = 0;
-
-                            for (let row of rows) {
-                                let type = (row['Type'] || '').trim().toLowerCase();
-                                let startTime = row['Start Date/time'] ? new Date(row['Start Date/time']).toISOString() : null;
-                                let note = row['Note'] || '';
-
-                                let category = 'memo';
-                                let title = null;
-                                let amount = 0;
-                                let unit = '';
-                                let durationMinutes = 0;
-
-                                if (type === 'sleep') {
-                                    category = 'sleep';
-                                    let sec = parseFloat(row['[Sleep] Duration (Seconds)']);
-                                    if (!isNaN(sec) && sec > 0) {
-                                        durationMinutes = Math.round(sec / 60);
-                                    } else if (row['[Sleep] End Date/time']) {
-                                        let diffMs = new Date(row['[Sleep] End Date/time']) - new Date(row['Start Date/time']);
-                                        durationMinutes = Math.max(1, Math.round(diffMs / 60000));
-                                    } else {
-                                        durationMinutes = 1;
-                                    }
-                                } else if (type === 'medical') {
-                                    category = 'medicine';
-                                    let medStr = row['[Medical] Medication'] || 'Medicine';
-                                    // Parse e.g. "中藥, 20 (ML)"
-                                    let parts = medStr.split(',');
-                                    title = parts[0].trim();
-                                    if (parts[1]) {
-                                        let amtMatch = parts[1].match(/([\d.]+)/);
-                                        amount = amtMatch ? parseFloat(amtMatch[1]) : 0;
-                                        let unitMatch = parts[1].match(/[a-zA-Z]+/);
-                                        unit = unitMatch ? unitMatch[0] : 'ml';
-                                    }
-                                } else {
-                                    // Fallback for other Nara types (Diaper, Routine, Feed, etc.) stored as memo
-                                    category = 'memo';
-                                    if (!note) {
-                                        note = `[${row['Type']}]`;
-                                    } else {
-                                        note = `[${row['Type']}] ${note}`;
-                                    }
-                                }
-
+                    
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                        const lines = e.target.result.split('\n').slice(1);
+                        let count = 0;
+                        for (let line of lines) {
+                            if (!line.trim()) continue;
+                            const cols = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+                            const clean = cols.map(c => c.replace(/^"|"$/g, ''));
+                            if (clean.length >= 7) {
                                 await supabaseClient.from('baby_logs').insert([{
                                     user_id: this.user.id,
-                                    category: category,
-                                    start_time: startTime,
-                                    duration_minutes: durationMinutes,
-                                    title: title,
-                                    amount: amount,
-                                    unit: unit,
-                                    notes: note
+                                    category: clean[0],
+                                    start_time: clean[1] || null,
+                                    duration_minutes: parseInt(clean[2]) || 0,
+                                    title: clean[3],
+                                    amount: parseFloat(clean[4]) || 0,
+                                    unit: clean[5],
+                                    notes: clean[6]
                                 }]);
                                 count++;
                             }
-
-                            alert(`Successfully imported ${count} logs from Nara Baby export!`);
-                            this.isImporting = false;
-                            this.csvFile = null;
-                            await this.fetchLogs();
-                        },
-                        error: (err) => {
-                            alert('Error parsing CSV: ' + err.message);
-                            this.isImporting = false;
                         }
-                    });
+                        alert(`Successfully imported ${count} logs!`);
+                        this.csvFile = null;
+                        await this.fetchLogs();
+                    };
+                    reader.readAsText(this.csvFile);
                 },
 
                 // Render Chart.js analytics
