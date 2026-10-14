@@ -81,6 +81,9 @@
                     <button @click="activeTab = 'medicine'" :class="activeTab === 'medicine' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
                         <i class="fa-solid fa-pills mr-1.5"></i> Medicine Logs
                     </button>
+                    <button @click="activeTab = 'memo'" :class="activeTab === 'memo' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
+                        <i class="fa-solid fa-note-sticky mr-1.5"></i> Memo Logs
+                    </button>
                     <button @click="activeTab = 'sleep_stats'; $nextTick(() => renderSleepChart())" :class="activeTab === 'sleep_stats' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
                         <i class="fa-solid fa-chart-bar mr-1.5"></i> Sleep Analytics
                     </button>
@@ -92,11 +95,11 @@
                     </button>
                 </div>
 
-                <!-- QUICK LOG CARDS SECTION (Visible on All, Sleep & Medicine Tabs) -->
-                <div x-show="['all', 'sleep', 'medicine'].includes(activeTab)" class="space-y-6">
+                <!-- QUICK LOG CARDS SECTION (Visible on All, Sleep, Medicine, & Memo Tabs) -->
+                <div x-show="['all', 'sleep', 'medicine', 'memo'].includes(activeTab)" class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         
-                        <!-- Sleep Logging Card (Timer + Manual Input + Running Option) -->
+                        <!-- Sleep Logging Card -->
                         <div class="bg-white p-5 rounded-2xl shadow-sm border border-indigo-100 flex flex-col justify-between">
                             <div>
                                 <div class="flex items-center justify-between mb-2">
@@ -107,14 +110,14 @@
                                     </div>
                                 </div>
 
-                                <!-- Mode 1: Instant Timer -->
+                                <!-- Timer Mode -->
                                 <div x-show="sleepInputMode === 'timer'">
                                     <div class="text-center py-2">
                                         <span class="text-2xl font-mono font-bold text-indigo-600" x-text="formatTimer(sleepTimerSeconds)">00:00:00</span>
                                     </div>
                                 </div>
 
-                                <!-- Mode 2: Manual Entry with Optional Running End Time -->
+                                <!-- Manual Entry Mode -->
                                 <div x-show="sleepInputMode === 'manual'" class="space-y-2 my-2">
                                     <div>
                                         <label class="text-[10px] uppercase font-semibold text-slate-400">Start Date & Time</label>
@@ -136,8 +139,13 @@
                             <div class="pt-2">
                                 <template x-if="sleepInputMode === 'timer'">
                                     <div>
-                                        <button x-show="!isSleeping" @click="startSleepTimer()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2 rounded-xl transition">Start Sleep</button>
+                                        <button x-show="!isSleeping && !runningSleepLog" @click="startSleepTimer()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2 rounded-xl transition">Start Sleep</button>
                                         <button x-show="isSleeping" @click="stopSleepTimer()" class="w-full bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold py-2 rounded-xl transition animate-pulse">Stop & Save</button>
+                                        <template x-if="!isSleeping && runningSleepLog">
+                                            <div class="text-center p-2 bg-amber-50 border border-amber-200 rounded-xl">
+                                                <p class="text-[11px] text-amber-800 font-medium">A sleep timer is already active below.</p>
+                                            </div>
+                                        </template>
                                     </div>
                                 </template>
                                 <template x-if="sleepInputMode === 'manual'">
@@ -169,12 +177,36 @@
                         </div>
                     </div>
 
+                    <!-- Memo Specific Filter Controls (Shown on Memo Tab) -->
+                    <template x-if="activeTab === 'memo'">
+                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-amber-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <span class="font-bold text-slate-800 text-sm">Filter & Sort Memos</span>
+                            <div class="flex items-center gap-2 w-full sm:w-auto">
+                                <input type="text" x-model="memoSearch" placeholder="Search memo text..." class="text-xs px-3 py-1.5 border rounded-xl focus:outline-none focus:ring-1 focus:ring-amber-500 w-full sm:w-48">
+                                <select x-model="memoSortBy" class="text-xs px-3 py-1.5 border rounded-xl focus:outline-none focus:ring-1 focus:ring-amber-500">
+                                    <option value="date_desc">Date (Newest First)</option>
+                                    <option value="date_asc">Date (Oldest First)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </template>
+
                     <!-- Logs Feed List -->
                     <div class="bg-white rounded-2xl shadow-sm border border-amber-100 p-5">
-                        <h3 class="font-bold text-slate-800 mb-4 flex items-center justify-between">
-                            <span x-text="activeTab === 'all' ? 'All Recent Logs' : (activeTab === 'sleep' ? 'Sleep Logs Only' : 'Medicine Logs Only')"></span>
-                            <span class="text-xs font-normal text-slate-400" x-text="filteredLogs.length + ' total entries'"></span>
-                        </h3>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-slate-800 flex items-center space-x-2">
+                                <span x-text="activeTab === 'all' ? 'All Recent Logs' : (activeTab === 'sleep' ? 'Sleep Logs' : (activeTab === 'medicine' ? 'Medicine Logs' : 'Memo Logs'))"></span>
+                                <span class="text-xs font-normal text-slate-400" x-text="'(' + filteredLogs.length + ' entries)'"></span>
+                            </h3>
+
+                            <!-- Delete All Logs per Category Button -->
+                            <template x-if="['sleep', 'medicine', 'memo'].includes(activeTab) && filteredLogs.length > 0">
+                                <button @click="deleteAllCategoryLogs(activeTab)" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-3 py-1.5 rounded-xl font-medium transition flex items-center">
+                                    <i class="fa-solid fa-trash-can mr-1.5"></i> Delete All <span class="capitalize ml-1" x-text="activeTab"></span> Logs
+                                </button>
+                            </template>
+                        </div>
+
                         <template x-if="filteredLogs.length === 0">
                             <p class="text-sm text-slate-400 text-center py-8">No logs found for this view.</p>
                         </template>
@@ -214,7 +246,7 @@
                                             <template x-if="log.category !== 'sleep'">
                                                 <div class="text-xs text-slate-500" x-text="formatLogDetails(log)"></div>
                                             </template>
-                                            <template x-if="log.notes">
+                                            <template x-if="log.notes && log.category !== 'memo'">
                                                 <div class="text-xs text-slate-600 italic mt-0.5" x-text="'- ' + log.notes"></div>
                                             </template>
                                         </div>
@@ -297,10 +329,8 @@
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                             <h3 class="font-bold text-slate-800">Medicine Activity Log</h3>
                             <div class="flex flex-wrap items-center gap-2">
-                                <!-- Search Input -->
                                 <input type="text" x-model="medSearch" placeholder="Search medicine or notes..." class="text-xs px-3 py-1.5 border rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500">
                                 
-                                <!-- Sort Selector -->
                                 <select x-model="medSortBy" class="text-xs px-3 py-1.5 border rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500">
                                     <option value="date_desc">Date (Newest First)</option>
                                     <option value="date_asc">Date (Oldest First)</option>
@@ -396,13 +426,11 @@
                 </div>
 
                 <div class="space-y-3">
-                    <!-- Start Date & Time -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Start Date & Time</label>
                         <input type="datetime-local" x-model="editingLog.start_time" class="w-full text-xs px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     </div>
 
-                    <!-- Sleep Specific Fields -->
                     <template x-if="editingLog.category === 'sleep'">
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">End Date & Time</label>
@@ -410,7 +438,6 @@
                         </div>
                     </template>
 
-                    <!-- Medicine Specific Fields -->
                     <template x-if="editingLog.category === 'medicine'">
                         <div class="space-y-3">
                             <div>
@@ -430,7 +457,6 @@
                         </div>
                     </template>
 
-                    <!-- Notes Field -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Notes</label>
                         <textarea x-model="editingLog.notes" rows="3" class="w-full text-xs p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
@@ -460,11 +486,11 @@
                 authEmail: '',
                 authPassword: '',
                 authError: '',
-                activeTab: 'all', // Tabs: 'all', 'sleep', 'medicine', 'sleep_stats', 'med_stats', 'import'
+                activeTab: 'all', // Tabs: 'all', 'sleep', 'medicine', 'memo', 'sleep_stats', 'med_stats', 'import'
                 logs: [],
                 
                 // Sleep Timer & Manual State
-                sleepInputMode: 'timer', // 'timer' or 'manual'
+                sleepInputMode: 'timer',
                 isSleeping: false,
                 sleepTimerSeconds: 0,
                 sleepInterval: null,
@@ -483,7 +509,9 @@
                 medSearch: '',
                 medSortBy: 'date_desc',
 
-                // Memo state
+                // Memo Search & Sort State
+                memoSearch: '',
+                memoSortBy: 'date_desc',
                 memoText: '',
 
                 // CSV state
@@ -498,9 +526,30 @@
                 // Chart timeframe offset state
                 chartOffsetDays: 0,
 
+                get runningSleepLog() {
+                    return this.logs.find(l => l.category === 'sleep' && !l.end_time);
+                },
+
                 get filteredLogs() {
-                    if (this.activeTab === 'sleep') return this.logs.filter(l => l.category === 'sleep');
-                    if (this.activeTab === 'medicine') return this.logs.filter(l => l.category === 'medicine');
+                    if (this.activeTab === 'sleep') {
+                        return this.logs.filter(l => l.category === 'sleep');
+                    }
+                    if (this.activeTab === 'medicine') {
+                        return this.logs.filter(l => l.category === 'medicine');
+                    }
+                    if (this.activeTab === 'memo') {
+                        let list = this.logs.filter(l => l.category === 'memo');
+                        if (this.memoSearch.trim()) {
+                            const q = this.memoSearch.toLowerCase();
+                            list = list.filter(m => (m.notes || '').toLowerCase().includes(q));
+                        }
+                        if (this.memoSortBy === 'date_desc') {
+                            list.sort((a, b) => new Date(b.start_time || b.created_at) - new Date(a.start_time || a.created_at));
+                        } else if (this.memoSortBy === 'date_asc') {
+                            list.sort((a, b) => new Date(a.start_time || a.created_at) - new Date(b.start_time || b.created_at));
+                        }
+                        return list;
+                    }
                     return this.logs;
                 },
 
@@ -581,8 +630,11 @@
                     if (!error) this.logs = data || [];
                 },
 
-                // Sleep Timer functions
+                // Sleep Timer functions (Enforcing ONLY 1 active running sleep)
                 startSleepTimer() {
+                    if (this.runningSleepLog) {
+                        return alert('A sleep log is already running! Please stop the active sleep session before starting a new one.');
+                    }
                     this.isSleeping = true;
                     this.sleepStartTime = new Date();
                     this.sleepTimerSeconds = 0;
@@ -611,11 +663,15 @@
                     await this.fetchLogs();
                 },
 
-                // Manual Sleep Entry (Support Running Mode)
+                // Manual Sleep Entry (Enforcing ONLY 1 active running sleep)
                 async saveManualSleep() {
                     if (!this.manualSleepStart) {
                         return alert('Please select a Start Date & Time.');
                     }
+                    if (this.manualSleepIsRunning && this.runningSleepLog) {
+                        return alert('A sleep log is already running! Please stop the active sleep session before starting a new running sleep.');
+                    }
+
                     const start = new Date(this.manualSleepStart);
                     let end = null;
                     let durationMinutes = 0;
@@ -732,6 +788,19 @@
                 async deleteLog(id) {
                     if (!confirm('Are you sure you want to delete this log?')) return;
                     await supabaseClient.from('baby_logs').delete().eq('id', id);
+                    await this.fetchLogs();
+                },
+
+                // Bulk Delete Category Logs
+                async deleteAllCategoryLogs(category) {
+                    if (!confirm(`Are you sure you want to PERMANENTLY delete ALL ${category.toUpperCase()} logs? This action cannot be undone.`)) return;
+                    
+                    await supabaseClient
+                        .from('baby_logs')
+                        .delete()
+                        .eq('user_id', this.user.id)
+                        .eq('category', category);
+                        
                     await this.fetchLogs();
                 },
 
