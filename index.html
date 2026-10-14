@@ -10,6 +10,8 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PapaParse for robust CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -135,7 +137,7 @@
                             <span class="text-xs font-normal text-slate-400" x-text="logs.length + ' total entries'"></span>
                         </h3>
                         <template x-if="logs.length === 0">
-                            <p class="text-sm text-slate-400 text-center py-8">No logs recorded yet. Use the quick cards above to start tracking!</p>
+                            <p class="text-sm text-slate-400 text-center py-8">No logs recorded yet. Use the quick cards above or import your CSV file!</p>
                         </template>
                         <div class="space-y-3">
                             <template x-for="log in logs" :key="log.id">
@@ -203,15 +205,30 @@
                             </button>
                         </div>
                         <hr class="border-amber-100">
+                        <!-- Method A: File Upload -->
                         <div>
-                            <h3 class="font-bold text-slate-800 text-lg mb-1">Import from CSV File</h3>
-                            <p class="text-sm text-slate-500 mb-3">Upload a CSV file containing logs (Columns: <code>category,start_time,duration_minutes,title,amount,unit,notes</code>).</p>
+                            <h3 class="font-bold text-slate-800 text-lg mb-1">Method 1: Upload Nara Baby CSV File</h3>
+                            <p class="text-sm text-slate-500 mb-3">Select your official Nara Baby export CSV file.</p>
                             
                             <div class="space-y-3">
                                 <input type="file" @change="csvFile = $event.target.files[0]" accept=".csv" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition">
                                 
-                                <button @click="processCSVImport()" :disabled="!csvFile" :class="csvFile ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'" class="font-medium px-4 py-2 rounded-xl text-sm transition flex items-center">
-                                    <i class="fa-solid fa-upload mr-2"></i> Upload and Import CSV
+                                <button @click="processCSVFileImport()" :disabled="!csvFile || isImporting" :class="csvFile && !isImporting ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'" class="font-medium px-4 py-2 rounded-xl text-sm transition flex items-center">
+                                    <i class="fa-solid fa-upload mr-2"></i> <span x-text="isImporting ? 'Importing File...' : 'Upload and Import CSV File'"></span>
+                                </button>
+                            </div>
+                        </div>
+                        <hr class="border-amber-100">
+                        <!-- Method B: Raw Text Paste -->
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-lg mb-1">Method 2: Paste Raw CSV Data</h3>
+                            <p class="text-sm text-slate-500 mb-3">Open your CSV file in a text editor, copy all text, and paste it below:</p>
+                            
+                            <div class="space-y-3">
+                                <textarea x-model="rawCsvText" rows="6" placeholder="Type,Profile Name,Start Date/time,..." class="w-full text-xs font-mono p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                                
+                                <button @click="processCSVPasteImport()" :disabled="!rawCsvText.trim() || isImporting" :class="rawCsvText.trim() && !isImporting ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'" class="font-medium px-4 py-2 rounded-xl text-sm transition flex items-center">
+                                    <i class="fa-solid fa-paste mr-2"></i> <span x-text="isImporting ? 'Importing Pasted Data...' : 'Import Pasted CSV Data'"></span>
                                 </button>
                             </div>
                         </div>
@@ -254,8 +271,10 @@
                 // Memo state
                 memoText: '',
 
-                // CSV File state
+                // CSV state
                 csvFile: null,
+                rawCsvText: '',
+                isImporting: false,
 
                 async init() {
                     const { data } = await supabaseClient.auth.getUser();
@@ -389,36 +408,92 @@
                     a.click();
                 },
 
-                processCSVImport() {
+                processCSVFileImport() {
                     if (!this.csvFile) return alert('Please select a CSV file first.');
-                    
-                    const reader = new FileReader();
-                    reader.onload = async (e) => {
-                        const lines = e.target.result.split('\n').slice(1);
-                        let count = 0;
-                        for (let line of lines) {
-                            if (!line.trim()) continue;
-                            const cols = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-                            const clean = cols.map(c => c.replace(/^"|"$/g, ''));
-                            if (clean.length >= 7) {
+                    this.executeCSVParse(this.csvFile);
+                },
+
+                processCSVPasteImport() {
+                    if (!this.rawCsvText.trim()) return alert('Please paste your CSV data first.');
+                    this.executeCSVParse(this.rawCsvText);
+                },
+
+                executeCSVParse(inputSource) {
+                    this.isImporting = true;
+
+                    Papa.parse(inputSource, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: async (results) => {
+                            const rows = results.data;
+                            let count = 0;
+
+                            for (let row of rows) {
+                                let type = (row['Type'] || '').trim().toLowerCase();
+                                let startTime = row['Start Date/time'] ? new Date(row['Start Date/time']).toISOString() : null;
+                                let note = row['Note'] || '';
+
+                                let category = 'memo';
+                                let title = null;
+                                let amount = 0;
+                                let unit = '';
+                                let durationMinutes = 0;
+
+                                if (type === 'sleep') {
+                                    category = 'sleep';
+                                    let sec = parseFloat(row['[Sleep] Duration (Seconds)']);
+                                    if (!isNaN(sec) && sec > 0) {
+                                        durationMinutes = Math.round(sec / 60);
+                                    } else if (row['[Sleep] End Date/time']) {
+                                        let diffMs = new Date(row['[Sleep] End Date/time']) - new Date(row['Start Date/time']);
+                                        durationMinutes = Math.max(1, Math.round(diffMs / 60000));
+                                    } else {
+                                        durationMinutes = 1;
+                                    }
+                                } else if (type === 'medical') {
+                                    category = 'medicine';
+                                    let medStr = row['[Medical] Medication'] || 'Medicine';
+                                    let parts = medStr.split(',');
+                                    title = parts[0].trim();
+                                    if (parts[1]) {
+                                        let amtMatch = parts[1].match(/([\d.]+)/);
+                                        amount = amtMatch ? parseFloat(amtMatch[1]) : 0;
+                                        let unitMatch = parts[1].match(/[a-zA-Z]+/);
+                                        unit = unitMatch ? unitMatch[0] : 'ml';
+                                    }
+                                } else {
+                                    category = 'memo';
+                                    if (!note) {
+                                        note = `[${row['Type']}]`;
+                                    } else {
+                                        note = `[${row['Type']}] ${note}`;
+                                    }
+                                }
+
                                 await supabaseClient.from('baby_logs').insert([{
                                     user_id: this.user.id,
-                                    category: clean[0],
-                                    start_time: clean[1] || null,
-                                    duration_minutes: parseInt(clean[2]) || 0,
-                                    title: clean[3],
-                                    amount: parseFloat(clean[4]) || 0,
-                                    unit: clean[5],
-                                    notes: clean[6]
+                                    category: category,
+                                    start_time: startTime,
+                                    duration_minutes: durationMinutes,
+                                    title: title,
+                                    amount: amount,
+                                    unit: unit,
+                                    notes: note
                                 }]);
                                 count++;
                             }
+
+                            alert(`Successfully imported ${count} logs!`);
+                            this.isImporting = false;
+                            this.csvFile = null;
+                            this.rawCsvText = '';
+                            await this.fetchLogs();
+                        },
+                        error: (err) => {
+                            alert('Error parsing CSV: ' + err.message);
+                            this.isImporting = false;
                         }
-                        alert(`Successfully imported ${count} logs!`);
-                        this.csvFile = null;
-                        await this.fetchLogs();
-                    };
-                    reader.readAsText(this.csvFile);
+                    });
                 },
 
                 // Render Chart.js analytics
