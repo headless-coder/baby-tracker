@@ -106,7 +106,7 @@
                 <div x-show="['all', 'sleep', 'medicine', 'memo'].includes(activeTab)" class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         
-                        <!-- Manual Sleep Logging Card (No Timer) -->
+                        <!-- Manual Sleep Logging Card -->
                         <div class="bg-white p-5 rounded-2xl shadow-sm border border-indigo-100 flex flex-col justify-between">
                             <div>
                                 <div class="flex items-center justify-between mb-3">
@@ -255,22 +255,27 @@
 
                 <!-- TAB: SLEEP ANALYTICS CHART & AVERAGES -->
                 <div x-show="activeTab === 'sleep_stats'" class="space-y-6">
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-indigo-100">
-                            <div class="text-[11px] font-semibold text-slate-400 uppercase">Avg Sleep (Last 7 Days)</div>
-                            <div class="text-xl font-bold text-indigo-600 mt-1" x-text="avgSleep7Days"></div>
+                    <!-- Averages including 90 Days -->
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                        <div class="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100">
+                            <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (7 Days)</div>
+                            <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleep7Days"></div>
                         </div>
-                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-indigo-100">
-                            <div class="text-[11px] font-semibold text-slate-400 uppercase">Avg Sleep (Last 30 Days)</div>
-                            <div class="text-xl font-bold text-indigo-600 mt-1" x-text="avgSleep30Days"></div>
+                        <div class="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100">
+                            <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (30 Days)</div>
+                            <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleep30Days"></div>
                         </div>
-                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-indigo-100">
-                            <div class="text-[11px] font-semibold text-slate-400 uppercase">Avg Sleep (Last Year)</div>
-                            <div class="text-xl font-bold text-indigo-600 mt-1" x-text="avgSleepYear"></div>
+                        <div class="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100">
+                            <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (90 Days)</div>
+                            <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleep90Days"></div>
                         </div>
-                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-indigo-100">
-                            <div class="text-[11px] font-semibold text-slate-400 uppercase">Avg Sleep (All Time)</div>
-                            <div class="text-xl font-bold text-indigo-600 mt-1" x-text="avgSleepAll"></div>
+                        <div class="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100">
+                            <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (Last Year)</div>
+                            <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleepYear"></div>
+                        </div>
+                        <div class="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100">
+                            <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (All Time)</div>
+                            <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleepAll"></div>
                         </div>
                     </div>
 
@@ -279,7 +284,7 @@
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div>
                                 <h3 class="font-bold text-slate-800">7-Day Stacked Sleep Duration Trend</h3>
-                                <p class="text-xs text-slate-400">Color-coded by session length</p>
+                                <p class="text-xs text-slate-400">Hover or click date labels/bars to view total daily sleep</p>
                             </div>
                             <div class="flex items-center space-x-2">
                                 <button @click="shiftDays(-1); renderSleepChart()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition">
@@ -294,7 +299,7 @@
                             </div>
                         </div>
 
-                        <!-- Custom Legend with Circular Swatches -->
+                        <!-- Custom Legend -->
                         <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-600 pt-1 border-t border-slate-100">
                             <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#34d399] inline-block"></span><span>&ge; 8 hours (Green)</span></div>
                             <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#60a5fa] inline-block"></span><span>4 to 8 hours (Blue)</span></div>
@@ -511,40 +516,32 @@
                 activeTab: 'all',
                 logs: [],
                 
-                // Timezone configuration
                 currentTimezone: localStorage.getItem('baby_tz') || 'America/Los_Angeles',
                 liveClock: '',
 
-                // Manual Sleep State
                 manualSleepStart: '',
                 manualSleepEnd: '',
                 manualSleepIsRunning: false,
                 sleepNote: '',
 
-                // Medicine form state
                 medTitle: '',
                 medAmount: '',
                 medUnit: 'ml',
 
-                // Medicine Listing Search & Sort State
                 medSearch: '',
                 medSortBy: 'date_desc',
 
-                // Memo Search & Sort State
                 memoSearch: '',
                 memoSortBy: 'date_desc',
                 memoText: '',
 
-                // CSV state
                 csvFile: null,
                 rawCsvText: '',
                 isImporting: false,
 
-                // Edit Modal state
                 showEditModal: false,
                 editingLog: {},
 
-                // Chart timeframe offset state
                 chartOffsetDays: 0,
 
                 saveTimezonePreference() {
@@ -627,6 +624,7 @@
 
                 get avgSleep7Days() { return this.calculateAverageSleepDays(7); },
                 get avgSleep30Days() { return this.calculateAverageSleepDays(30); },
+                get avgSleep90Days() { return this.calculateAverageSleepDays(90); },
                 get avgSleepYear() { return this.calculateAverageSleepDays(365); },
                 get avgSleepAll() {
                     const sleepLogs = this.logs.filter(l => l.category === 'sleep' && l.duration_minutes > 0);
@@ -702,7 +700,6 @@
                     if (!error) this.logs = data || [];
                 },
 
-                // Manual Sleep Entry
                 async saveManualSleep() {
                     if (!this.manualSleepStart) {
                         return alert('Please select a Start Date & Time.');
@@ -976,7 +973,7 @@
                     });
                 },
 
-                // Render Stacked Sleep Chart with Hour/Minute Hover Tooltips & Updated Color Logic
+                // Render Stacked Sleep Chart with Total Sleep Tooltip on Date Hover/Click
                 renderSleepChart() {
                     const ctx = document.getElementById('sleepChart').getContext('2d');
                     if (window.sleepChartInstance) window.sleepChartInstance.destroy();
@@ -984,6 +981,7 @@
                     const labels = [];
                     const maxSessionsPerDay = 6;
                     const datasets = [];
+                    const dailyTotalMins = new Array(7).fill(0);
 
                     for (let s = 0; s < maxSessionsPerDay; s++) {
                         datasets.push({
@@ -1006,18 +1004,15 @@
 
                         let daySleeps = this.logs.filter(l => l.category === 'sleep' && l.start_time && l.start_time.startsWith(dateStr));
                         
+                        let daySumMins = 0;
                         daySleeps.forEach((sleep, sIdx) => {
+                            let totalMins = sleep.duration_minutes || 0;
+                            daySumMins += totalMins;
                             if (sIdx < maxSessionsPerDay) {
-                                let totalMins = sleep.duration_minutes || 0;
                                 let durationHours = parseFloat((totalMins / 60).toFixed(2));
                                 datasets[sIdx].data[6 - i] = durationHours;
                                 datasets[sIdx].durationMinsArray[6 - i] = totalMins;
 
-                                // Updated Color Coding Logic:
-                                // Green: >= 8h
-                                // Blue: 4h to < 8h
-                                // Yellow: 1h to < 4h
-                                // Light Pink: < 1h
                                 let hours = totalMins / 60;
                                 let color = '#f472b6'; // Light Pink (< 1h)
                                 if (hours >= 8) color = '#34d399';      // Green (>= 8h)
@@ -1027,6 +1022,7 @@
                                 datasets[sIdx].backgroundColor[6 - i] = color;
                             }
                         });
+                        dailyTotalMins[6 - i] = daySumMins;
                     }
 
                     window.sleepChartInstance = new Chart(ctx, {
@@ -1042,6 +1038,13 @@
                                 legend: { display: false },
                                 tooltip: {
                                     callbacks: {
+                                        title: function(tooltipItems) {
+                                            const dataIndex = tooltipItems[0].dataIndex;
+                                            const totalMins = dailyTotalMins[dataIndex];
+                                            const h = Math.floor(totalMins / 60);
+                                            const m = totalMins % 60;
+                                            return `${tooltipItems[0].label} (Total: ${h} hrs ${m} mins)`;
+                                        },
                                         label: function(context) {
                                             const datasetIndex = context.datasetIndex;
                                             const dataIndex = context.dataIndex;
@@ -1049,7 +1052,7 @@
                                             if (!mins) return '';
                                             const h = Math.floor(mins / 60);
                                             const m = mins % 60;
-                                            return ` Duration: ${h} hrs ${m} mins`;
+                                            return ` Session: ${h} hrs ${m} mins`;
                                         }
                                     }
                                 }
