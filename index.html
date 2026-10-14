@@ -72,37 +72,69 @@
             <div>
                 <!-- Navigation Tabs -->
                 <div class="flex space-x-2 border-b border-amber-200 mb-6 pb-2 overflow-x-auto">
-                    <button @click="activeTab = 'tracker'" :class="activeTab === 'tracker' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
-                        <i class="fa-solid fa-stopwatch mr-1.5"></i> Tracker & Logs
+                    <button @click="activeTab = 'all'" :class="activeTab === 'all' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
+                        <i class="fa-solid fa-list mr-1.5"></i> All Logs
                     </button>
-                    <button @click="activeTab = 'stats'; $nextTick(() => renderCharts())" :class="activeTab === 'stats' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
-                        <i class="fa-solid fa-chart-pie mr-1.5"></i> Statistics & Trends
+                    <button @click="activeTab = 'sleep'" :class="activeTab === 'sleep' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
+                        <i class="fa-solid fa-bed mr-1.5"></i> Sleep Logs
+                    </button>
+                    <button @click="activeTab = 'medicine'" :class="activeTab === 'medicine' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
+                        <i class="fa-solid fa-pills mr-1.5"></i> Medicine Logs
+                    </button>
+                    <button @click="activeTab = 'stats'; $nextTick(() => renderSleepChart())" :class="activeTab === 'stats' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
+                        <i class="fa-solid fa-chart-bar mr-1.5"></i> Sleep Analytics
                     </button>
                     <button @click="activeTab = 'import'" :class="activeTab === 'import' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
                         <i class="fa-solid fa-file-csv mr-1.5"></i> CSV Import/Export
                     </button>
                 </div>
 
-                <!-- TAB 1: TRACKER & LOGS -->
-                <div x-show="activeTab === 'tracker'" class="space-y-6">
-                    
-                    <!-- Quick Action Cards / Running Timers -->
+                <!-- QUICK LOG CARDS SECTION (Visible on All, Sleep & Medicine Tabs) -->
+                <div x-show="['all', 'sleep', 'medicine'].includes(activeTab)" class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <!-- Sleep Timer Card -->
+                        
+                        <!-- Sleep Logging Card (Timer + Manual Input) -->
                         <div class="bg-white p-5 rounded-2xl shadow-sm border border-indigo-100 flex flex-col justify-between">
                             <div>
-                                <div class="flex items-center justify-between mb-3">
-                                    <span class="font-semibold text-indigo-900 flex items-center"><i class="fa-solid fa-bed text-indigo-500 mr-2"></i> Sleep Timer</span>
-                                    <span class="text-2xl font-mono font-bold text-indigo-600" x-text="formatTimer(sleepTimerSeconds)">00:00:00</span>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-semibold text-indigo-900 flex items-center"><i class="fa-solid fa-bed text-indigo-500 mr-2"></i> Sleep Log</span>
+                                    <div class="flex space-x-1 bg-slate-100 p-0.5 rounded-lg text-[10px]">
+                                        <button @click="sleepInputMode = 'timer'" :class="sleepInputMode === 'timer' ? 'bg-white font-bold text-indigo-600 shadow-xs' : 'text-slate-500'" class="px-2 py-0.5 rounded-md">Timer</button>
+                                        <button @click="sleepInputMode = 'manual'" :class="sleepInputMode === 'manual' ? 'bg-white font-bold text-indigo-600 shadow-xs' : 'text-slate-500'" class="px-2 py-0.5 rounded-md">Manual</button>
+                                    </div>
                                 </div>
-                                <input type="text" x-model="sleepNote" placeholder="Sleep notes / tag..." class="w-full text-xs px-2.5 py-1.5 border rounded-lg mb-3 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+
+                                <!-- Mode 1: Running Timer -->
+                                <div x-show="sleepInputMode === 'timer'">
+                                    <div class="text-center py-2">
+                                        <span class="text-2xl font-mono font-bold text-indigo-600" x-text="formatTimer(sleepTimerSeconds)">00:00:00</span>
+                                    </div>
+                                </div>
+
+                                <!-- Mode 2: Manual Time & Date Input -->
+                                <div x-show="sleepInputMode === 'manual'" class="space-y-2 my-2">
+                                    <div>
+                                        <label class="text-[10px] uppercase font-semibold text-slate-400">Start Date & Time</label>
+                                        <input type="datetime-local" x-model="manualSleepStart" class="w-full text-xs px-2 py-1 border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label class="text-[10px] uppercase font-semibold text-slate-400">End Date & Time</label>
+                                        <input type="datetime-local" x-model="manualSleepEnd" class="w-full text-xs px-2 py-1 border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                    </div>
+                                </div>
+
+                                <input type="text" x-model="sleepNote" placeholder="Sleep notes / tag..." class="w-full text-xs px-2.5 py-1.5 border rounded-lg my-2 focus:outline-none focus:ring-1 focus:ring-indigo-500">
                             </div>
-                            <div class="flex space-x-2">
-                                <template x-if="!isSleeping">
-                                    <button @click="startSleepTimer()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2 rounded-xl transition">Start Sleep</button>
+
+                            <div class="pt-2">
+                                <template x-if="sleepInputMode === 'timer'">
+                                    <div>
+                                        <button x-show="!isSleeping" @click="startSleepTimer()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2 rounded-xl transition">Start Sleep</button>
+                                        <button x-show="isSleeping" @click="stopSleepTimer()" class="w-full bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold py-2 rounded-xl transition animate-pulse">Stop & Save</button>
+                                    </div>
                                 </template>
-                                <template x-if="isSleeping">
-                                    <button @click="stopSleepTimer()" class="w-full bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold py-2 rounded-xl transition animate-pulse">Stop & Save</button>
+                                <template x-if="sleepInputMode === 'manual'">
+                                    <button @click="saveManualSleep()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2 rounded-xl transition">Save Manual Sleep</button>
                                 </template>
                             </div>
                         </div>
@@ -133,14 +165,14 @@
                     <!-- Logs Feed List -->
                     <div class="bg-white rounded-2xl shadow-sm border border-amber-100 p-5">
                         <h3 class="font-bold text-slate-800 mb-4 flex items-center justify-between">
-                            <span>Recent Logs</span>
-                            <span class="text-xs font-normal text-slate-400" x-text="logs.length + ' total entries'"></span>
+                            <span x-text="activeTab === 'all' ? 'All Recent Logs' : (activeTab === 'sleep' ? 'Sleep Logs Only' : 'Medicine Logs Only')"></span>
+                            <span class="text-xs font-normal text-slate-400" x-text="filteredLogs.length + ' total entries'"></span>
                         </h3>
-                        <template x-if="logs.length === 0">
-                            <p class="text-sm text-slate-400 text-center py-8">No logs recorded yet. Use the quick cards above or import your CSV file!</p>
+                        <template x-if="filteredLogs.length === 0">
+                            <p class="text-sm text-slate-400 text-center py-8">No logs found for this view.</p>
                         </template>
                         <div class="space-y-3">
-                            <template x-for="log in logs" :key="log.id">
+                            <template x-for="log in filteredLogs" :key="log.id">
                                 <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition">
                                     <div class="flex items-center space-x-3">
                                         <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white"
@@ -157,7 +189,16 @@
                                         </div>
                                         <div>
                                             <div class="text-sm font-semibold text-slate-800 capitalize" x-text="log.category"></div>
-                                            <div class="text-xs text-slate-500" x-text="formatLogDetails(log)"></div>
+                                            <!-- Detailed Start Time, End Time & Duration for Sleep -->
+                                            <template x-if="log.category === 'sleep'">
+                                                <div class="text-xs text-indigo-600 font-medium">
+                                                    <span x-text="formatTimeOnly(log.start_time)"></span> – <span x-text="formatTimeOnly(log.end_time)"></span> 
+                                                    (<span x-text="(log.duration_minutes / 60).toFixed(1) + ' hrs / ' + log.duration_minutes + ' mins'"></span>)
+                                                </div>
+                                            </template>
+                                            <template x-if="log.category !== 'sleep'">
+                                                <div class="text-xs text-slate-500" x-text="formatLogDetails(log)"></div>
+                                            </template>
                                             <template x-if="log.notes">
                                                 <div class="text-xs text-slate-600 italic mt-0.5" x-text="'- ' + log.notes"></div>
                                             </template>
@@ -171,30 +212,37 @@
                             </template>
                         </div>
                     </div>
-
                 </div>
 
-                <!-- TAB 2: STATISTICS & TRENDS -->
+                <!-- TAB: SLEEP ANALYTICS CHART -->
                 <div x-show="activeTab === 'stats'" class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Sleep Trend Chart -->
-                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-amber-100">
-                            <h3 class="font-bold text-slate-800 mb-4">Sleep Duration (Minutes per Log)</h3>
-                            <div class="relative h-64">
-                                <canvas id="sleepChart"></canvas>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-amber-100">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+                            <div>
+                                <h3 class="font-bold text-slate-800">7-Day Sleep Duration Trend</h3>
+                                <p class="text-xs text-slate-400">Total daily sleep duration in hours (0.1 hr increments)</p>
+                            </div>
+                            <!-- Timeframe Shift Navigation Toggle -->
+                            <div class="flex items-center space-x-2">
+                                <button @click="shiftDays(-1); renderSleepChart()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition">
+                                    <i class="fa-solid fa-chevron-left mr-1"></i> Previous 1 Day
+                                </button>
+                                <button @click="resetDays(); renderSleepChart()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-2.5 py-1.5 rounded-lg font-medium transition" title="Reset to today">
+                                    Today
+                                </button>
+                                <button @click="shiftDays(1); renderSleepChart()" :disabled="chartOffsetDays >= 0" :class="chartOffsetDays >= 0 ? 'opacity-40 cursor-not-allowed' : ''" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition">
+                                    Next 1 Day <i class="fa-solid fa-chevron-right ml-1"></i>
+                                </button>
                             </div>
                         </div>
-                        <!-- Log Category Breakdown -->
-                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-amber-100">
-                            <h3 class="font-bold text-slate-800 mb-4">Logs Distribution</h3>
-                            <div class="relative h-64">
-                                <canvas id="categoryChart"></canvas>
-                            </div>
+
+                        <div class="relative h-72">
+                            <canvas id="sleepChart"></canvas>
                         </div>
                     </div>
                 </div>
 
-                <!-- TAB 3: CSV IMPORT / EXPORT -->
+                <!-- TAB: CSV IMPORT / EXPORT -->
                 <div x-show="activeTab === 'import'" class="space-y-6">
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-amber-100 space-y-6">
                         <div>
@@ -205,7 +253,6 @@
                             </button>
                         </div>
                         <hr class="border-amber-100">
-                        <!-- Method A: File Upload -->
                         <div>
                             <h3 class="font-bold text-slate-800 text-lg mb-1">Method 1: Upload Nara Baby CSV File</h3>
                             <p class="text-sm text-slate-500 mb-3">Select your official Nara Baby export CSV file.</p>
@@ -219,7 +266,6 @@
                             </div>
                         </div>
                         <hr class="border-amber-100">
-                        <!-- Method B: Raw Text Paste -->
                         <div>
                             <h3 class="font-bold text-slate-800 text-lg mb-1">Method 2: Paste Raw CSV Data</h3>
                             <p class="text-sm text-slate-500 mb-3">Open your CSV file in a text editor, copy all text, and paste it below:</p>
@@ -253,15 +299,18 @@
                 authEmail: '',
                 authPassword: '',
                 authError: '',
-                activeTab: 'tracker',
+                activeTab: 'all', // Tabs: 'all', 'sleep', 'medicine', 'stats', 'import'
                 logs: [],
                 
-                // Sleep Timer state
+                // Sleep Timer & Manual State
+                sleepInputMode: 'timer', // 'timer' or 'manual'
                 isSleeping: false,
                 sleepTimerSeconds: 0,
                 sleepInterval: null,
                 sleepStartTime: null,
                 sleepNote: '',
+                manualSleepStart: '',
+                manualSleepEnd: '',
 
                 // Medicine form state
                 medTitle: '',
@@ -275,6 +324,15 @@
                 csvFile: null,
                 rawCsvText: '',
                 isImporting: false,
+
+                // Chart timeframe offset state (0 = today ending, -1 = 1 day shifted back, etc.)
+                chartOffsetDays: 0,
+
+                get filteredLogs() {
+                    if (this.activeTab === 'sleep') return this.logs.filter(l => l.category === 'sleep');
+                    if (this.activeTab === 'medicine') return this.logs.filter(l => l.category === 'medicine');
+                    return this.logs;
+                },
 
                 async init() {
                     const { data } = await supabaseClient.auth.getUser();
@@ -310,7 +368,7 @@
                     const { data, error } = await supabaseClient
                         .from('baby_logs')
                         .select('*')
-                        .order('created_at', { ascending: false });
+                        .order('start_time', { ascending: false });
                     if (!error) this.logs = data || [];
                 },
 
@@ -344,6 +402,33 @@
                     await this.fetchLogs();
                 },
 
+                // Manual Sleep Entry
+                async saveManualSleep() {
+                    if (!this.manualSleepStart || !this.manualSleepEnd) {
+                        return alert('Please enter both Start Date/Time and End Date/Time.');
+                    }
+                    const start = new Date(this.manualSleepStart);
+                    const end = new Date(this.manualSleepEnd);
+                    if (end <= start) {
+                        return alert('End Date/Time must be after Start Date/Time.');
+                    }
+                    const durationMinutes = Math.round((end - start) / 60000);
+
+                    await supabaseClient.from('baby_logs').insert([{
+                        user_id: this.user.id,
+                        category: 'sleep',
+                        start_time: start.toISOString(),
+                        end_time: end.toISOString(),
+                        duration_minutes: durationMinutes,
+                        notes: this.sleepNote
+                    }]);
+
+                    this.manualSleepStart = '';
+                    this.manualSleepEnd = '';
+                    this.sleepNote = '';
+                    await this.fetchLogs();
+                },
+
                 formatTimer(totalSecs) {
                     const hrs = Math.floor(totalSecs / 3600).toString().padStart(2, '0');
                     const mins = Math.floor((totalSecs % 3600) / 60).toString().padStart(2, '0');
@@ -356,6 +441,7 @@
                     await supabaseClient.from('baby_logs').insert([{
                         user_id: this.user.id,
                         category: 'medicine',
+                        start_time: new Date().toISOString(),
                         title: this.medTitle,
                         amount: parseFloat(this.medAmount) || 0,
                         unit: this.medUnit
@@ -370,6 +456,7 @@
                     await supabaseClient.from('baby_logs').insert([{
                         user_id: this.user.id,
                         category: 'memo',
+                        start_time: new Date().toISOString(),
                         notes: this.memoText
                     }]);
                     this.memoText = '';
@@ -383,7 +470,6 @@
                 },
 
                 formatLogDetails(log) {
-                    if (log.category === 'sleep') return `Duration: ${log.duration_minutes} mins`;
                     if (log.category === 'medicine') return `${log.title} — ${log.amount} ${log.unit}`;
                     if (log.category === 'memo') return log.notes;
                     return '';
@@ -394,11 +480,26 @@
                     return new Date(dateStr).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                 },
 
+                formatTimeOnly(dateStr) {
+                    if (!dateStr) return 'N/A';
+                    return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                },
+
+                // Shiftable 7-day chart timeframe logic
+                shiftDays(delta) {
+                    this.chartOffsetDays += delta;
+                    if (this.chartOffsetDays > 0) this.chartOffsetDays = 0;
+                },
+
+                resetDays() {
+                    this.chartOffsetDays = 0;
+                },
+
                 // CSV Export & Import Workflow
                 exportCSV() {
-                    let csv = 'category,start_time,duration_minutes,title,amount,unit,notes\n';
+                    let csv = 'category,start_time,end_time,duration_minutes,title,amount,unit,notes\n';
                     this.logs.forEach(l => {
-                        csv += `"${l.category}","${l.start_time || ''}",${l.duration_minutes || 0},"${l.title || ''}",${l.amount || 0},"${l.unit || ''}","${l.notes || ''}"\n`;
+                        csv += `"${l.category}","${l.start_time || ''}","${l.end_time || ''}",${l.duration_minutes || 0},"${l.title || ''}",${l.amount || 0},"${l.unit || ''}","${l.notes || ''}"\n`;
                     });
                     const blob = new Blob([csv], { type: 'text/csv' });
                     const url = window.URL.createObjectURL(blob);
@@ -431,6 +532,7 @@
                             for (let row of rows) {
                                 let type = (row['Type'] || '').trim().toLowerCase();
                                 let startTime = row['Start Date/time'] ? new Date(row['Start Date/time']).toISOString() : null;
+                                let endTime = row['[Sleep] End Date/time'] ? new Date(row['[Sleep] End Date/time']).toISOString() : null;
                                 let note = row['Note'] || '';
 
                                 let category = 'memo';
@@ -444,8 +546,8 @@
                                     let sec = parseFloat(row['[Sleep] Duration (Seconds)']);
                                     if (!isNaN(sec) && sec > 0) {
                                         durationMinutes = Math.round(sec / 60);
-                                    } else if (row['[Sleep] End Date/time']) {
-                                        let diffMs = new Date(row['[Sleep] End Date/time']) - new Date(row['Start Date/time']);
+                                    } else if (endTime && startTime) {
+                                        let diffMs = new Date(endTime) - new Date(startTime);
                                         durationMinutes = Math.max(1, Math.round(diffMs / 60000));
                                     } else {
                                         durationMinutes = 1;
@@ -474,6 +576,7 @@
                                     user_id: this.user.id,
                                     category: category,
                                     start_time: startTime,
+                                    end_time: endTime,
                                     duration_minutes: durationMinutes,
                                     title: title,
                                     amount: amount,
@@ -496,45 +599,60 @@
                     });
                 },
 
-                // Render Chart.js analytics
-                renderCharts() {
-                    const sleepLogs = this.logs.filter(l => l.category === 'sleep').slice(0, 10).reverse();
-                    
-                    // Sleep Chart
-                    const ctxSleep = document.getElementById('sleepChart').getContext('2d');
+                // Render Chart.js Sleep Duration (Hours, 0.1 increments, 7-day shifting)
+                renderSleepChart() {
+                    const ctx = document.getElementById('sleepChart').getContext('2d');
                     if (window.sleepChartInstance) window.sleepChartInstance.destroy();
-                    window.sleepChartInstance = new Chart(ctxSleep, {
+
+                    // Calculate 7-day date window based on shift offset
+                    const dates = [];
+                    const dailySleepHours = [];
+
+                    for (let i = 6; i >= 0; i--) {
+                        let d = new Date();
+                        d.setDate(d.getDate() + this.chartOffsetDays - i);
+                        let dateStr = d.toISOString().slice(0, 10);
+                        dates.push(d.toLocaleDateString([], { month: 'short', day: 'numeric' }));
+
+                        // Sum sleep duration in hours for this day
+                        let daySleepMinutes = this.logs
+                            .filter(l => l.category === 'sleep' && l.start_time && l.start_time.startsWith(dateStr))
+                            .reduce((sum, l) => sum + (l.duration_minutes || 0), 0);
+
+                        let hours = parseFloat((daySleepMinutes / 60).toFixed(1));
+                        dailySleepHours.push(hours);
+                    }
+
+                    window.sleepChartInstance = new Chart(ctx, {
                         type: 'bar',
                         data: {
-                            labels: sleepLogs.map(l => this.formatDate(l.start_time)),
+                            labels: dates,
                             datasets: [{
-                                label: 'Sleep (mins)',
-                                data: sleepLogs.map(l => l.duration_minutes),
+                                label: 'Total Sleep (Hours)',
+                                data: dailySleepHours,
                                 backgroundColor: '#818cf8',
                                 borderRadius: 8
                             }]
                         },
-                        options: { responsive: true, maintainAspectRatio: false }
-                    });
-
-                    // Category Distribution Chart
-                    const counts = {
-                        sleep: this.logs.filter(l => l.category === 'sleep').length,
-                        medicine: this.logs.filter(l => l.category === 'medicine').length,
-                        memo: this.logs.filter(l => l.category === 'memo').length
-                    };
-                    const ctxCat = document.getElementById('categoryChart').getContext('2d');
-                    if (window.catChartInstance) window.catChartInstance.destroy();
-                    window.catChartInstance = new Chart(ctxCat, {
-                        type: 'doughnut',
-                        data: {
-                            labels: ['Sleep', 'Medicine', 'Memo'],
-                            datasets: [{
-                                data: [counts.sleep, counts.medicine, counts.memo],
-                                backgroundColor: ['#818cf8', '#34d399', '#fbbf24']
-                            }]
-                        },
-                        options: { responsive: true, maintainAspectRatio: false }
+                        options: { 
+                            responsive: true, 
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        stepSize: 0.1,
+                                        callback: function(value) {
+                                            return value.toFixed(1) + ' h';
+                                        }
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Hours'
+                                    }
+                                }
+                            }
+                        }
                     });
                 }
             }
