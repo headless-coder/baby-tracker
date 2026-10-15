@@ -562,7 +562,6 @@
 
                 chartOffsetDays: 0,
 
-                // Selected Chart Info Row State
                 selectedChartDateInfo: 'None selected',
                 selectedChartTotalSleep: '--',
                 selectedChartLogDuration: '--',
@@ -646,7 +645,6 @@
                     return list;
                 },
 
-                // Helper to get local date string (YYYY-MM-DD) for a timestamp according to selected timezone
                 getLocalDateString(utcDateStr) {
                     try {
                         const d = new Date(utcDateStr);
@@ -677,7 +675,6 @@
                     let activeDays = 0;
                     for (let i = 0; i < daysCount; i++) {
                         let d = new Date();
-                        // Shift base date by timezone
                         let tzNowStr = d.toLocaleString('en-US', { timeZone: this.currentTimezone });
                         let tzNow = new Date(tzNowStr);
                         tzNow.setDate(tzNow.getDate() - i);
@@ -1015,7 +1012,7 @@
                     });
                 },
 
-                // Render Stacked Sleep Chart with Timezone-aware midnight cutoff and Info Row updates
+                // Render Stacked Sleep Chart with 0.5h grid lines and info row support
                 renderSleepChart() {
                     const ctx = document.getElementById('sleepChart').getContext('2d');
                     if (window.sleepChartInstance) window.sleepChartInstance.destroy();
@@ -1050,7 +1047,6 @@
                         let fullLabel = `${dayName}, ${dateFormatted}`;
                         labels.push(fullLabel);
 
-                        // Midnight cutoff matching selected timezone
                         let daySleeps = this.logs.filter(l => l.category === 'sleep' && l.start_time && this.getLocalDateString(l.start_time) === dateStr);
                         
                         let daySumMins = 0;
@@ -1093,13 +1089,9 @@
                                     const dataIndex = element.index;
                                     const ds = window.sleepChartInstance.data.datasets[datasetIndex];
                                     
-                                    const dateText = ds.dateLabelArray[dataIndex];
-                                    const logMins = ds.durationMinsArray[dataIndex];
-                                    const totalMins = dailyTotalMins[dataIndex];
-
-                                    self.selectedChartDateInfo = dateText;
-                                    self.selectedChartTotalSleep = self.formatDurationHoursMins(totalMins);
-                                    self.selectedChartLogDuration = self.formatDurationHoursMins(logMins);
+                                    self.selectedChartDateInfo = ds.dateLabelArray[dataIndex];
+                                    self.selectedChartTotalSleep = self.formatDurationHoursMins(dailyTotalMins[dataIndex]);
+                                    self.selectedChartLogDuration = self.formatDurationHoursMins(ds.durationMinsArray[dataIndex]);
                                 }
                             },
                             onClick: (event, activeElements) => {
@@ -1109,13 +1101,9 @@
                                     const dataIndex = element.index;
                                     const ds = window.sleepChartInstance.data.datasets[datasetIndex];
                                     
-                                    const dateText = ds.dateLabelArray[dataIndex];
-                                    const logMins = ds.durationMinsArray[dataIndex];
-                                    const totalMins = dailyTotalMins[dataIndex];
-
-                                    self.selectedChartDateInfo = dateText;
-                                    self.selectedChartTotalSleep = self.formatDurationHoursMins(totalMins);
-                                    self.selectedChartLogDuration = self.formatDurationHoursMins(logMins);
+                                    self.selectedChartDateInfo = ds.dateLabelArray[dataIndex];
+                                    self.selectedChartTotalSleep = self.formatDurationHoursMins(dailyTotalMins[dataIndex]);
+                                    self.selectedChartLogDuration = self.formatDurationHoursMins(ds.durationMinsArray[dataIndex]);
                                 }
                             },
                             plugins: {
@@ -1131,7 +1119,7 @@
                                         },
                                         label: function(context) {
                                             const datasetIndex = context.datasetIndex;
-                                            const dataIndex = context.dataIndex;
+                                            const dataIndex = context.index;
                                             const mins = window.sleepChartInstance.data.datasets[datasetIndex].durationMinsArray[dataIndex];
                                             if (!mins) return '';
                                             const h = Math.floor(mins / 60);
@@ -1151,6 +1139,9 @@
                                         callback: function(value) {
                                             return value.toFixed(1) + ' h';
                                         }
+                                    },
+                                    grid: {
+                                        color: 'rgba(203, 213, 225, 0.4)'
                                     },
                                     title: {
                                         display: true,
