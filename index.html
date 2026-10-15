@@ -1012,7 +1012,7 @@
                     });
                 },
 
-                // Render Stacked Sleep Chart with 0.5h grid lines and info row support
+                // Render Stacked Sleep Chart with 0.5h grid lines and whole-number tick labels
                 renderSleepChart() {
                     const ctx = document.getElementById('sleepChart').getContext('2d');
                     if (window.sleepChartInstance) window.sleepChartInstance.destroy();
@@ -1137,7 +1137,8 @@
                                     ticks: {
                                         stepSize: 0.5,
                                         callback: function(value) {
-                                            return value.toFixed(1) + ' h';
+                                            // Show label only for whole numbers
+                                            return value % 1 === 0 ? value + ' h' : '';
                                         }
                                     },
                                     grid: {
