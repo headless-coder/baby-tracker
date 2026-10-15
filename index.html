@@ -255,7 +255,6 @@
 
                 <!-- TAB: SLEEP ANALYTICS CHART & AVERAGES -->
                 <div x-show="activeTab === 'sleep_stats'" class="space-y-6">
-                    <!-- Averages including 90 Days -->
                     <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
                         <div class="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100">
                             <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (7 Days)</div>
@@ -279,12 +278,12 @@
                         </div>
                     </div>
 
-                    <!-- Stacked Sleep Chart & Custom Legend -->
+                    <!-- Stacked Sleep Chart & Selected Date Info Row -->
                     <div class="bg-white p-5 rounded-2xl shadow-sm border border-amber-100 space-y-4">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div>
                                 <h3 class="font-bold text-slate-800">7-Day Stacked Sleep Duration Trend</h3>
-                                <p class="text-xs text-slate-400">Hover or click date labels/bars to view total daily sleep</p>
+                                <p class="text-xs text-slate-400">Midnight cutoffs synchronized to <span class="font-semibold text-indigo-600" x-text="currentTimezone"></span></p>
                             </div>
                             <div class="flex items-center space-x-2">
                                 <button @click="shiftDays(-1); renderSleepChart()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition">
@@ -296,6 +295,25 @@
                                 <button @click="shiftDays(1); renderSleepChart()" :disabled="chartOffsetDays >= 0" :class="chartOffsetDays >= 0 ? 'opacity-40 cursor-not-allowed' : ''" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition">
                                     Next 1 Day <i class="fa-solid fa-chevron-right ml-1"></i>
                                 </button>
+                            </div>
+                        </div>
+
+                        <!-- Selected Date & Log Info Row -->
+                        <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-calendar-day text-indigo-500"></i>
+                                <span class="font-semibold text-slate-700">Selected Date:</span>
+                                <span class="font-bold text-indigo-900" x-text="selectedChartDateInfo">Hover or click a bar</span>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div>
+                                    <span class="font-semibold text-slate-700">Total Daily Sleep:</span>
+                                    <span class="font-bold text-indigo-600" x-text="selectedChartTotalSleep">--</span>
+                                </div>
+                                <div>
+                                    <span class="font-semibold text-slate-700">Selected Log Duration:</span>
+                                    <span class="font-bold text-pink-600" x-text="selectedChartLogDuration">--</span>
+                                </div>
                             </div>
                         </div>
 
@@ -544,8 +562,14 @@
 
                 chartOffsetDays: 0,
 
+                // Selected Chart Info Row State
+                selectedChartDateInfo: 'None selected',
+                selectedChartTotalSleep: '--',
+                selectedChartLogDuration: '--',
+
                 saveTimezonePreference() {
                     localStorage.setItem('baby_tz', this.currentTimezone);
+                    this.renderSleepChart();
                 },
 
                 toggleCurrentTime(event) {
@@ -622,6 +646,19 @@
                     return list;
                 },
 
+                // Helper to get local date string (YYYY-MM-DD) for a timestamp according to selected timezone
+                getLocalDateString(utcDateStr) {
+                    try {
+                        const d = new Date(utcDateStr);
+                        const tzDateStr = d.toLocaleString('en-US', { timeZone: this.currentTimezone });
+                        const tzDate = new Date(tzDateStr);
+                        const pad = (n) => String(n).padStart(2, '0');
+                        return `${tzDate.getFullYear()}-${pad(tzDate.getMonth()+1)}-${pad(tzDate.getDate())}`;
+                    } catch (e) {
+                        return utcDateStr.slice(0, 10);
+                    }
+                },
+
                 get avgSleep7Days() { return this.calculateAverageSleepDays(7); },
                 get avgSleep30Days() { return this.calculateAverageSleepDays(30); },
                 get avgSleep90Days() { return this.calculateAverageSleepDays(90); },
@@ -629,7 +666,7 @@
                 get avgSleepAll() {
                     const sleepLogs = this.logs.filter(l => l.category === 'sleep' && l.duration_minutes > 0);
                     if (sleepLogs.length === 0) return '0 hrs 0 mins';
-                    const dates = [...new Set(sleepLogs.map(l => new Date(l.start_time).toISOString().slice(0, 10)))];
+                    const dates = [...new Set(sleepLogs.map(l => this.getLocalDateString(l.start_time)))];
                     const totalMins = sleepLogs.reduce((sum, l) => sum + l.duration_minutes, 0);
                     const avgMins = Math.round(totalMins / dates.length);
                     return this.formatDurationHoursMins(avgMins);
@@ -640,10 +677,15 @@
                     let activeDays = 0;
                     for (let i = 0; i < daysCount; i++) {
                         let d = new Date();
-                        d.setDate(d.getDate() - i);
-                        let dateStr = d.toISOString().slice(0, 10);
+                        // Shift base date by timezone
+                        let tzNowStr = d.toLocaleString('en-US', { timeZone: this.currentTimezone });
+                        let tzNow = new Date(tzNowStr);
+                        tzNow.setDate(tzNow.getDate() - i);
+                        const pad = (n) => String(n).padStart(2, '0');
+                        let dateStr = `${tzNow.getFullYear()}-${pad(tzNow.getMonth()+1)}-${pad(tzNow.getDate())}`;
+
                         let dayMins = this.logs
-                            .filter(l => l.category === 'sleep' && l.start_time && l.start_time.startsWith(dateStr))
+                            .filter(l => l.category === 'sleep' && l.start_time && this.getLocalDateString(l.start_time) === dateStr)
                             .reduce((sum, l) => sum + (l.duration_minutes || 0), 0);
                         if (dayMins > 0) {
                             totalMins += dayMins;
@@ -973,7 +1015,7 @@
                     });
                 },
 
-                // Render Stacked Sleep Chart with Total Sleep Tooltip on Date Hover/Click
+                // Render Stacked Sleep Chart with Timezone-aware midnight cutoff and Info Row updates
                 renderSleepChart() {
                     const ctx = document.getElementById('sleepChart').getContext('2d');
                     if (window.sleepChartInstance) window.sleepChartInstance.destroy();
@@ -988,21 +1030,28 @@
                             label: `Session ${s+1}`,
                             data: new Array(7).fill(0),
                             durationMinsArray: new Array(7).fill(0),
+                            dateLabelArray: new Array(7).fill(''),
                             backgroundColor: [],
                             borderRadius: 4
                         });
                     }
 
                     for (let i = 6; i >= 0; i--) {
-                        let d = new Date();
-                        d.setDate(d.getDate() + this.chartOffsetDays - i);
-                        let dateStr = d.toISOString().slice(0, 10);
-                        
-                        let dayName = d.toLocaleDateString([], { weekday: 'short', timeZone: this.currentTimezone });
-                        let dateFormatted = d.toLocaleDateString([], { month: 'short', day: 'numeric', timeZone: this.currentTimezone });
-                        labels.push(`${dayName}, ${dateFormatted}`);
+                        let baseDate = new Date();
+                        let tzNowStr = baseDate.toLocaleString('en-US', { timeZone: this.currentTimezone });
+                        let tzNow = new Date(tzNowStr);
+                        tzNow.setDate(tzNow.getDate() + this.chartOffsetDays - i);
 
-                        let daySleeps = this.logs.filter(l => l.category === 'sleep' && l.start_time && l.start_time.startsWith(dateStr));
+                        const pad = (n) => String(n).padStart(2, '0');
+                        let dateStr = `${tzNow.getFullYear()}-${pad(tzNow.getMonth()+1)}-${pad(tzNow.getDate())}`;
+                        
+                        let dayName = tzNow.toLocaleDateString([], { weekday: 'short' });
+                        let dateFormatted = tzNow.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                        let fullLabel = `${dayName}, ${dateFormatted}`;
+                        labels.push(fullLabel);
+
+                        // Midnight cutoff matching selected timezone
+                        let daySleeps = this.logs.filter(l => l.category === 'sleep' && l.start_time && this.getLocalDateString(l.start_time) === dateStr);
                         
                         let daySumMins = 0;
                         daySleeps.forEach((sleep, sIdx) => {
@@ -1012,6 +1061,7 @@
                                 let durationHours = parseFloat((totalMins / 60).toFixed(2));
                                 datasets[sIdx].data[6 - i] = durationHours;
                                 datasets[sIdx].durationMinsArray[6 - i] = totalMins;
+                                datasets[sIdx].dateLabelArray[6 - i] = fullLabel;
 
                                 let hours = totalMins / 60;
                                 let color = '#f472b6'; // Light Pink (< 1h)
@@ -1025,6 +1075,8 @@
                         dailyTotalMins[6 - i] = daySumMins;
                     }
 
+                    const self = this;
+
                     window.sleepChartInstance = new Chart(ctx, {
                         type: 'bar',
                         data: {
@@ -1034,6 +1086,38 @@
                         options: { 
                             responsive: true, 
                             maintainAspectRatio: false,
+                            onHover: (event, activeElements) => {
+                                if (activeElements && activeElements.length > 0) {
+                                    const element = activeElements[0];
+                                    const datasetIndex = element.datasetIndex;
+                                    const dataIndex = element.index;
+                                    const ds = window.sleepChartInstance.data.datasets[datasetIndex];
+                                    
+                                    const dateText = ds.dateLabelArray[dataIndex];
+                                    const logMins = ds.durationMinsArray[dataIndex];
+                                    const totalMins = dailyTotalMins[dataIndex];
+
+                                    self.selectedChartDateInfo = dateText;
+                                    self.selectedChartTotalSleep = self.formatDurationHoursMins(totalMins);
+                                    self.selectedChartLogDuration = self.formatDurationHoursMins(logMins);
+                                }
+                            },
+                            onClick: (event, activeElements) => {
+                                if (activeElements && activeElements.length > 0) {
+                                    const element = activeElements[0];
+                                    const datasetIndex = element.datasetIndex;
+                                    const dataIndex = element.index;
+                                    const ds = window.sleepChartInstance.data.datasets[datasetIndex];
+                                    
+                                    const dateText = ds.dateLabelArray[dataIndex];
+                                    const logMins = ds.durationMinsArray[dataIndex];
+                                    const totalMins = dailyTotalMins[dataIndex];
+
+                                    self.selectedChartDateInfo = dateText;
+                                    self.selectedChartTotalSleep = self.formatDurationHoursMins(totalMins);
+                                    self.selectedChartLogDuration = self.formatDurationHoursMins(logMins);
+                                }
+                            },
                             plugins: {
                                 legend: { display: false },
                                 tooltip: {
