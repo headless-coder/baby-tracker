@@ -88,6 +88,9 @@
                     <button @click="activeTab = 'memo'" :class="activeTab === 'memo' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
                         <i class="fa-solid fa-note-sticky mr-1.5"></i> Memo Logs
                     </button>
+                    <button @click="activeTab = 'search'" :class="activeTab === 'search' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
+                        <i class="fa-solid fa-magnifying-glass mr-1.5"></i> Log Search & History
+                    </button>
                     <button @click="activeTab = 'sleep_stats'; $nextTick(() => renderSleepChart())" :class="activeTab === 'sleep_stats' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
                         <i class="fa-solid fa-chart-bar mr-1.5"></i> Sleep Analytics
                     </button>
@@ -165,26 +168,11 @@
                         </div>
                     </div>
 
-                    <!-- Memo Filter Controls -->
-                    <template x-if="activeTab === 'memo'">
-                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-amber-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-                            <span class="font-bold text-slate-800 text-sm">Filter & Sort Memos</span>
-                            <div class="flex items-center gap-2 w-full sm:w-auto">
-                                <input type="text" x-model="memoSearch" placeholder="Search memo text..." class="text-xs px-3 py-1.5 border rounded-xl focus:outline-none focus:ring-1 focus:ring-amber-500 w-full sm:w-48">
-                                <select x-model="memoSortBy" class="text-xs px-3 py-1.5 border rounded-xl focus:outline-none focus:ring-1 focus:ring-amber-500">
-                                    <option value="date_desc">Date (Newest First)</option>
-                                    <option value="date_asc">Date (Oldest First)</option>
-                                </select>
-                            </div>
-                        </div>
-                    </template>
-
-                    <!-- Logs Feed List -->
+                    <!-- Logs Feed List (Memory Optimized: Limited to 30 Recent Logs) -->
                     <div class="bg-white rounded-2xl shadow-sm border border-amber-100 p-5">
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="font-bold text-slate-800 flex items-center space-x-2">
-                                <span x-text="activeTab === 'all' ? 'All Recent Logs' : (activeTab === 'sleep' ? 'Sleep Logs' : (activeTab === 'medicine' ? 'Medicine Logs' : 'Memo Logs'))"></span>
-                                <span class="text-xs font-normal text-slate-400" x-text="'(' + filteredLogs.length + ' entries)'"></span>
+                                <span x-text="activeTab === 'all' ? 'Recent Logs (Last 30)' : (activeTab === 'sleep' ? 'Recent Sleep Logs (Last 30)' : (activeTab === 'medicine' ? 'Recent Medicine Logs (Last 30)' : 'Recent Memo Logs (Last 30)'))"></span>
                             </h3>
 
                             <template x-if="['sleep', 'medicine', 'memo'].includes(activeTab) && filteredLogs.length > 0">
@@ -195,8 +183,9 @@
                         </div>
 
                         <template x-if="filteredLogs.length === 0">
-                            <p class="text-sm text-slate-400 text-center py-8">No logs found for this view.</p>
+                            <p class="text-sm text-slate-400 text-center py-8">No recent logs found for this view.</p>
                         </template>
+
                         <div class="space-y-3">
                             <template x-for="log in filteredLogs" :key="log.id">
                                 <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition" :class="!log.end_time && log.category === 'sleep' ? 'bg-indigo-50/50 border-indigo-200' : ''">
@@ -248,6 +237,89 @@
                                         <button @click="deleteLog(log.id)" class="text-slate-300 hover:text-rose-500 p-1 transition" title="Delete Log"><i class="fa-solid fa-trash-can"></i></button>
                                     </div>
                                 </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: ADVANCED LOG SEARCH & HISTORICAL FILTERING -->
+                <div x-show="activeTab === 'search'" class="space-y-6">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-indigo-100 space-y-4">
+                        <h3 class="font-bold text-slate-800 text-base">Search Historical Logs</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                            <div>
+                                <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Filter by Log Category</label>
+                                <select x-model="searchCategory" class="w-full text-xs px-3 py-2 border rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                    <option value="all">All Categories</option>
+                                    <option value="sleep">Sleep Logs Only</option>
+                                    <option value="medicine">Medicine Logs Only</option>
+                                    <option value="memo">Memo Logs Only</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Filter Date</label>
+                                <input type="date" x-model="searchDate" class="w-full text-xs px-3 py-2 border rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Search Keywords</label>
+                                <input type="text" x-model="searchQuery" placeholder="Search title or notes..." class="w-full text-xs px-3 py-2 border rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                            </div>
+                            <div class="flex items-end">
+                                <button @click="searchDate = ''; searchQuery = ''; searchCategory = 'all'" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-2 rounded-xl transition">Reset Filters</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filtered Historical Logs Table -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-amber-100 p-5">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="font-bold text-slate-800 text-sm">Matching Historical Logs</span>
+                            <span class="text-xs text-slate-400" x-text="'(' + searchedHistoricalLogs.length + ' results found)'"></span>
+                        </div>
+                        <div class="space-y-3">
+                            <template x-for="log in searchedHistoricalLogs" :key="log.id">
+                                <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white"
+                                            :class="{
+                                                'bg-indigo-500': log.category === 'sleep',
+                                                'bg-emerald-500': log.category === 'medicine',
+                                                'bg-amber-500': log.category === 'memo'
+                                            }">
+                                            <i class="fa-solid" :class="{
+                                                'fa-bed': log.category === 'sleep',
+                                                'fa-pills': log.category === 'medicine',
+                                                'fa-note-sticky': log.category === 'memo'
+                                            }"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-semibold text-slate-800 capitalize" x-text="log.category"></div>
+                                            <template x-if="log.category === 'sleep'">
+                                                <div class="text-xs text-indigo-600 font-medium">
+                                                    <span x-text="formatTimeInTZ(log.start_time)"></span> – 
+                                                    <span x-text="log.end_time ? formatTimeInTZ(log.end_time) : 'Active'"></span> 
+                                                    <template x-if="log.end_time">
+                                                        <span>(<span x-text="formatDurationHoursMins(log.duration_minutes)"></span>)</span>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                            <template x-if="log.category !== 'sleep'">
+                                                <div class="text-xs text-slate-500" x-text="formatLogDetails(log)"></div>
+                                            </template>
+                                            <template x-if="log.notes && log.category !== 'memo'">
+                                                <div class="text-xs text-slate-600 italic mt-0.5" x-text="'- ' + log.notes"></div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-xs text-slate-400 mr-1" x-text="formatDateInTZ(log.start_time || log.created_at)"></span>
+                                        <button @click="openEditModal(log)" class="text-slate-400 hover:text-indigo-600 p-1 transition"><i class="fa-solid fa-pen-to-square"></i></button>
+                                        <button @click="deleteLog(log.id)" class="text-slate-300 hover:text-rose-500 p-1 transition"><i class="fa-solid fa-trash-can"></i></button>
+                                    </div>
+                                </div>
+                            </template>
+                            <template x-if="searchedHistoricalLogs.length === 0">
+                                <p class="text-sm text-slate-400 text-center py-8">No historical logs match your search filters.</p>
                             </template>
                         </div>
                     </div>
@@ -352,55 +424,6 @@
                         <h3 class="font-bold text-slate-800 mb-4">Medication Dose Counts</h3>
                         <div class="relative h-64">
                             <canvas id="medChart"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-emerald-100">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                            <h3 class="font-bold text-slate-800">Medicine Activity Log</h3>
-                            <div class="flex flex-wrap items-center gap-2">
-                                <input type="text" x-model="medSearch" placeholder="Search medicine or notes..." class="text-xs px-3 py-1.5 border rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500">
-                                
-                                <select x-model="medSortBy" class="text-xs px-3 py-1.5 border rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500">
-                                    <option value="date_desc">Date (Newest First)</option>
-                                    <option value="date_asc">Date (Oldest First)</option>
-                                    <option value="name_asc">Name (A-Z)</option>
-                                    <option value="amount_desc">Amount (High to Low)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs text-slate-600 border-collapse">
-                                <thead>
-                                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase">
-                                        <th class="p-3">Date & Time</th>
-                                        <th class="p-3">Medicine</th>
-                                        <th class="p-3">Amount / Dose</th>
-                                        <th class="p-3">Notes</th>
-                                        <th class="p-3 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <template x-for="med in processedMedLogs" :key="med.id">
-                                        <tr class="border-b border-slate-100 hover:bg-emerald-50/30 transition">
-                                            <td class="p-3 whitespace-nowrap" x-text="formatDateInTZ(med.start_time || med.created_at)"></td>
-                                            <td class="p-3 font-semibold text-slate-800" x-text="med.title || 'Medicine'"></td>
-                                            <td class="p-3 font-mono font-medium text-emerald-600" x-text="med.amount ? (med.amount + ' ' + (med.unit || 'ml')) : 'N/A'"></td>
-                                            <td class="p-3 text-slate-500 italic" x-text="med.notes || '-'"></td>
-                                            <td class="p-3 text-right whitespace-nowrap">
-                                                <button @click="openEditModal(med)" class="text-slate-400 hover:text-indigo-600 p-1 transition mr-1"><i class="fa-solid fa-pen-to-square"></i></button>
-                                                <button @click="deleteLog(med.id)" class="text-slate-300 hover:text-rose-500 p-1 transition"><i class="fa-solid fa-trash-can"></i></button>
-                                            </td>
-                                        </tr>
-                                    </template>
-                                    <template x-if="processedMedLogs.length === 0">
-                                        <tr>
-                                            <td colspan="5" class="p-6 text-center text-slate-400">No medicine logs match your search.</td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
                         </div>
                     </div>
                 </div>
@@ -546,12 +569,10 @@
                 medAmount: '',
                 medUnit: 'ml',
 
-                medSearch: '',
-                medSortBy: 'date_desc',
-
-                memoSearch: '',
-                memoSortBy: 'date_desc',
-                memoText: '',
+                // Advanced Log Search State
+                searchCategory: 'all',
+                searchDate: '',
+                searchQuery: '',
 
                 csvFile: null,
                 rawCsvText: '',
@@ -590,23 +611,33 @@
                     return this.logs.find(l => l.category === 'sleep' && !l.end_time);
                 },
 
+                // Solution 1A: Optimized Feed View - Limits DOM payload to recent 30 entries
                 get filteredLogs() {
-                    if (this.activeTab === 'sleep') return this.logs.filter(l => l.category === 'sleep');
-                    if (this.activeTab === 'medicine') return this.logs.filter(l => l.category === 'medicine');
-                    if (this.activeTab === 'memo') {
-                        let list = this.logs.filter(l => l.category === 'memo');
-                        if (this.memoSearch.trim()) {
-                            const q = this.memoSearch.toLowerCase();
-                            list = list.filter(m => (m.notes || '').toLowerCase().includes(q));
-                        }
-                        if (this.memoSortBy === 'date_desc') {
-                            list.sort((a, b) => new Date(b.start_time || b.created_at) - new Date(a.start_time || a.created_at));
-                        } else if (this.memoSortBy === 'date_asc') {
-                            list.sort((a, b) => new Date(a.start_time || a.created_at) - new Date(b.start_time || b.created_at));
-                        }
-                        return list;
+                    let list = this.logs;
+                    if (this.activeTab === 'sleep') list = this.logs.filter(l => l.category === 'sleep');
+                    else if (this.activeTab === 'medicine') list = this.logs.filter(l => l.category === 'medicine');
+                    else if (this.activeTab === 'memo') list = this.logs.filter(l => l.category === 'memo');
+                    
+                    return list.slice(0, 30);
+                },
+
+                // Solution 1A: Dedicated Search Tab Engine
+                get searchedHistoricalLogs() {
+                    let list = [...this.logs];
+                    if (this.searchCategory !== 'all') {
+                        list = list.filter(l => l.category === this.searchCategory);
                     }
-                    return this.logs;
+                    if (this.searchDate) {
+                        list = list.filter(l => this.getLocalDateString(l.start_time || l.created_at) === this.searchDate);
+                    }
+                    if (this.searchQuery.trim()) {
+                        const q = this.searchQuery.toLowerCase();
+                        list = list.filter(l => 
+                            (l.title || '').toLowerCase().includes(q) || 
+                            (l.notes || '').toLowerCase().includes(q)
+                        );
+                    }
+                    return list;
                 },
 
                 get medicineLogs() {
@@ -624,27 +655,6 @@
                         .toFixed(1);
                 },
 
-                get processedMedLogs() {
-                    let list = [...this.medicineLogs];
-                    if (this.medSearch.trim()) {
-                        const q = this.medSearch.toLowerCase();
-                        list = list.filter(m => 
-                            (m.title || '').toLowerCase().includes(q) || 
-                            (m.notes || '').toLowerCase().includes(q)
-                        );
-                    }
-                    if (this.medSortBy === 'date_desc') {
-                        list.sort((a, b) => new Date(b.start_time || b.created_at) - new Date(a.start_time || a.created_at));
-                    } else if (this.medSortBy === 'date_asc') {
-                        list.sort((a, b) => new Date(a.start_time || a.created_at) - new Date(b.start_time || b.created_at));
-                    } else if (this.medSortBy === 'name_asc') {
-                        list.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-                    } else if (this.medSortBy === 'amount_desc') {
-                        list.sort((a, b) => (b.amount || 0) - (a.amount || 0));
-                    }
-                    return list;
-                },
-
                 getLocalDateString(utcDateStr) {
                     try {
                         const d = new Date(utcDateStr);
@@ -653,7 +663,7 @@
                         const pad = (n) => String(n).padStart(2, '0');
                         return `${tzDate.getFullYear()}-${pad(tzDate.getMonth()+1)}-${pad(tzDate.getDate())}`;
                     } catch (e) {
-                        return utcDateStr.slice(0, 10);
+                        return utcDateStr ? utcDateStr.slice(0, 10) : '';
                     }
                 },
 
@@ -1012,15 +1022,18 @@
                     });
                 },
 
-                // Render Stacked Sleep Chart with 0.5h grid lines and whole-number tick labels
+                // Solutions 1B, 2A & 2B: Strict memory cleanup, explicit min/max bounds & forced 0.5h gridlines
                 renderSleepChart() {
                     const ctx = document.getElementById('sleepChart').getContext('2d');
+                    
+                    // Solution 1B: Clean up old instance to free memory on mobile
                     if (window.sleepChartInstance) window.sleepChartInstance.destroy();
 
                     const labels = [];
                     const maxSessionsPerDay = 6;
                     const datasets = [];
                     const dailyTotalMins = new Array(7).fill(0);
+                    let maxDailyHoursFound = 12; // Base scale boundary
 
                     for (let s = 0; s < maxSessionsPerDay; s++) {
                         datasets.push({
@@ -1069,6 +1082,9 @@
                             }
                         });
                         dailyTotalMins[6 - i] = daySumMins;
+                        if ((daySumMins / 60) > maxDailyHoursFound) {
+                            maxDailyHoursFound = Math.ceil(daySumMins / 60);
+                        }
                     }
 
                     const self = this;
@@ -1133,16 +1149,22 @@
                                 x: { stacked: true },
                                 y: {
                                     stacked: true,
-                                    beginAtZero: true,
+                                    // Solution 2A: Explicit boundaries
+                                    min: 0,
+                                    max: maxDailyHoursFound,
                                     ticks: {
                                         stepSize: 0.5,
                                         callback: function(value) {
-                                            // Show label only for whole numbers
+                                            // Solution 2A & 2B: Only render whole numbers as text labels
                                             return value % 1 === 0 ? value + ' h' : '';
                                         }
                                     },
+                                    // Solution 2B: Forced grid line styling at 0.5h intervals
                                     grid: {
-                                        color: 'rgba(203, 213, 225, 0.4)'
+                                        display: true,
+                                        color: 'rgba(148, 163, 184, 0.4)',
+                                        drawOnChartArea: true,
+                                        drawTicks: true
                                     },
                                     title: {
                                         display: true,
