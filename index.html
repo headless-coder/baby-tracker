@@ -168,7 +168,7 @@
                         </div>
                     </div>
 
-                    <!-- Logs Feed List (Memory Optimized: Limited to 30 Recent Logs) -->
+                    <!-- Logs Feed List -->
                     <div class="bg-white rounded-2xl shadow-sm border border-amber-100 p-5">
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="font-bold text-slate-800 flex items-center space-x-2">
@@ -242,7 +242,7 @@
                     </div>
                 </div>
 
-                <!-- TAB: ADVANCED LOG SEARCH & HISTORICAL FILTERING (LAZY LOADED) -->
+                <!-- TAB: ADVANCED LOG SEARCH (LAZY LOADED) -->
                 <template x-if="renderedTabs['search']">
                     <div x-show="activeTab === 'search'" class="space-y-6">
                         <div class="bg-white p-5 rounded-2xl shadow-sm border border-indigo-100 space-y-4">
@@ -359,15 +359,15 @@
                                 <div>
                                     <h3 class="font-bold text-slate-800">Sleep Duration Trend</h3>
                                     <p class="text-xs text-slate-400">
-                                        Showing <span class="font-semibold text-indigo-600" x-text="sleepChartDaysWindow + ' Days (' + (sleepChartDaysWindow/7) + ' Weeks)'"></span> — Midnight cutoffs & split bars synchronized to <span class="font-semibold text-indigo-600" x-text="currentTimezone"></span>
+                                        Displaying <span class="font-semibold text-indigo-600" x-text="sleepChartDaysWindow + ' Days (' + (sleepChartDaysWindow/7) + ' Week/s) [Pre-loaded 28 days max]'"></span>
                                     </p>
                                 </div>
                                 <div class="flex items-center space-x-2">
-                                    <button @click="loadMoreSleepWeeks(); renderSleepChart()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg font-medium transition flex items-center">
-                                        <i class="fa-solid fa-plus mr-1.5"></i> Load +2 Weeks More
+                                    <button @click="loadMoreSleepWeek(); renderSleepChart()" :disabled="sleepChartDaysWindow >= 28" :class="sleepChartDaysWindow >= 28 ? 'opacity-40 cursor-not-allowed' : ''" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg font-medium transition flex items-center">
+                                        <i class="fa-solid fa-plus mr-1.5"></i> Load +1 Week More
                                     </button>
-                                    <button @click="resetSleepWeeks(); renderSleepChart()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-medium transition">
-                                        Reset to 4 Weeks
+                                    <button @click="resetSleepWeek(); renderSleepChart()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-medium transition">
+                                        Reset to 1 Week
                                     </button>
                                 </div>
                             </div>
@@ -406,7 +406,7 @@
                     </div>
                 </template>
 
-                <!-- TAB: MEDICINE ANALYTICS & DETAILED TABLE (LAZY LOADED) -->
+                <!-- TAB: MEDICINE ANALYTICS (LAZY LOADED) -->
                 <template x-if="renderedTabs['med_stats']">
                     <div x-show="activeTab === 'med_stats'" class="space-y-6">
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -565,7 +565,6 @@
                 authError: '',
                 activeTab: 'all',
                 
-                // Feature 1: Lazy Rendering State for Tabs
                 renderedTabs: {
                     'all': true,
                     'sleep': true,
@@ -592,7 +591,6 @@
                 medAmount: '',
                 medUnit: 'ml',
 
-                // Advanced Log Search State
                 searchCategory: 'all',
                 searchDate: '',
                 searchQuery: '',
@@ -604,8 +602,8 @@
                 showEditModal: false,
                 editingLog: {},
 
-                // Feature 2: Sleep Chart Windowing (4 weeks default)
-                sleepChartDaysWindow: 28,
+                // Pre-loaded 4 weeks max in background (28 days), but initial display is 7 days (1 week)
+                sleepChartDaysWindow: 7,
 
                 selectedChartDateInfo: 'None selected',
                 selectedChartTotalSleep: '--',
@@ -622,12 +620,15 @@
                     }
                 },
 
-                loadMoreSleepWeeks() {
-                    this.sleepChartDaysWindow += 14;
+                loadMoreSleepWeek() {
+                    if (this.sleepChartDaysWindow < 28) {
+                        this.sleepChartDaysWindow += 7;
+                        if (this.sleepChartDaysWindow > 28) this.sleepChartDaysWindow = 28;
+                    }
                 },
 
-                resetSleepWeeks() {
-                    this.sleepChartDaysWindow = 28;
+                resetSleepWeek() {
+                    this.sleepChartDaysWindow = 7;
                 },
 
                 saveTimezonePreference() {
@@ -1056,16 +1057,22 @@
                     });
                 },
 
-                // Feature 3: Midnight Bar Splitting Algorithm + Source Bar Color Preservation
+                // Midnight Bar Splitting Algorithm + Source Bar Color Preservation (Pre-loads 28 days max)
                 splitSleepLogsAcrossMidnight() {
                     const splitSegments = [];
-                    const sleepLogs = this.logs.filter(l => l.category === 'sleep' && l.start_time && l.end_time);
+                    // Pre-load 28 days (4 weeks) max window
+                    const maxPreloadDate = new Date();
+                    maxPreloadDate.setDate(maxPreloadDate.getDate() - 28);
+
+                    const sleepLogs = this.logs.filter(l => {
+                        if (l.category !== 'sleep' || !l.start_time || !l.end_time) return false;
+                        return new Date(l.end_time) >= maxPreloadDate;
+                    });
 
                     sleepLogs.forEach(log => {
                         const totalDurationMins = log.duration_minutes || 0;
                         const totalHours = totalDurationMins / 60;
 
-                        // Original source color classification based on total session length
                         let sourceColor = '#f472b6'; // Light Pink (< 1h)
                         if (totalHours >= 8) sourceColor = '#34d399';      // Green (>= 8h)
                         else if (totalHours >= 4) sourceColor = '#60a5fa'; // Blue (4h to <8h)
@@ -1075,14 +1082,12 @@
                         const end = new Date(log.end_time);
 
                         while (currStart < end) {
-                            // Find midnight bound in current user timezone
                             const tzCurrStartStr = currStart.toLocaleString('en-US', { timeZone: this.currentTimezone });
                             const tzCurrStart = new Date(tzCurrStartStr);
                             
                             const tzNextMidnight = new Date(tzCurrStart);
-                            tzNextMidnight.setHours(24, 0, 0, 0); // Midnight end of day
+                            tzNextMidnight.setHours(24, 0, 0, 0);
 
-                            // Convert local midnight back to UTC Date
                             const diffMsToMidnight = tzNextMidnight - tzCurrStart;
                             let currSegmentEnd = new Date(currStart.getTime() + diffMsToMidnight);
 
@@ -1108,7 +1113,6 @@
                     return splitSegments;
                 },
 
-                // Render Sleep Chart with Windowing and Split Midnight Bars
                 renderSleepChart() {
                     const ctx = document.getElementById('sleepChart');
                     if (!ctx) return;
@@ -1116,11 +1120,10 @@
                     if (window.sleepChartInstance) window.sleepChartInstance.destroy();
 
                     const splitSegments = this.splitSleepLogsAcrossMidnight();
-                    const daysCount = this.sleepChartDaysWindow;
+                    const daysCount = this.sleepChartDaysWindow; // Display window (7 days by default, expandable up to 28)
                     const labels = [];
                     const dailyTotalMins = new Array(daysCount).fill(0);
 
-                    // Group split segments by date
                     const dailySegmentsMap = {};
                     const datesList = [];
 
@@ -1141,7 +1144,6 @@
                         dailySegmentsMap[dateStr] = splitSegments.filter(s => s.dateStr === dateStr);
                     }
 
-                    // Determine max number of sessions in any single day within window
                     let maxSessionsInWindow = 1;
                     datesList.forEach(dStr => {
                         const segs = dailySegmentsMap[dStr] || [];
@@ -1173,7 +1175,7 @@
                                 datasets[sIdx].data[idx] = durationHours;
                                 datasets[sIdx].durationMinsArray[idx] = seg.durationMinutes;
                                 datasets[sIdx].dateLabelArray[idx] = labels[idx];
-                                datasets[sIdx].backgroundColor[idx] = seg.sourceColor; // Inherits source color
+                                datasets[sIdx].backgroundColor[idx] = seg.sourceColor;
                             }
                         });
 
