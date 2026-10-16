@@ -398,7 +398,7 @@
                             <div class="flex justify-between items-center border-b pb-3">
                                 <div>
                                     <h3 class="font-bold text-slate-800 text-base">Long-Term Sleep Analytics</h3>
-                                    <p class="text-xs text-slate-400">Aggregated historical averages (7-day, 12-month, 5-year views based on daily totals)</p>
+                                    <p class="text-xs text-slate-400">Aggregated historical averages (midnight splits correctly attributed per day)</p>
                                 </div>
                                 <button @click="fetchHistoricalSleepLogs(); renderHistoricalCharts()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg font-medium transition">
                                     <i class="fa-solid fa-rotate mr-1"></i> Refresh Data
@@ -420,7 +420,7 @@
 
                                 <hr class="border-amber-100">
 
-                                <!-- 2. Past 12 Months' Averages Chart (Jan average, Feb average, etc.) -->
+                                <!-- 2. Past 12 Months' Averages Chart -->
                                 <div class="space-y-2">
                                     <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide">Past 12 Months' Daily Average (Jan, Feb, etc.)</h4>
                                     <div class="relative w-full h-64 min-h-[240px]">
@@ -931,15 +931,13 @@
                     });
                 },
 
-                // RENDER HISTORICAL CHARTS USING TRUE DAILY TOTAL SLEEP DURATION AVERAGES
+                // RENDER HISTORICAL CHARTS WITH STRICT NON-OVERLAPPING DAILY TOTALS
                 renderHistoricalCharts() {
                     const allLogs = [...this.logs, ...this.allSleepLogsCache];
                     
-                    // Helper to build a map of dateStr -> total sleep minutes for that day
                     const dailyTotalsMap = {};
                     allLogs.forEach(l => {
                         if (l.category === 'sleep' && l.start_time && l.end_time && l.duration_minutes > 0) {
-                            // Split multi-day across midnight and sum per calendar date
                             let currStart = new Date(l.start_time);
                             const end = new Date(l.end_time);
                             while (currStart < end) {
@@ -959,7 +957,7 @@
                         }
                     });
 
-                    // 1. Past 7 Days Chart (using daily total sleep duration)
+                    // 1. Past 7 Days Chart
                     const ctx7 = document.getElementById('hist7DaysChart');
                     if (ctx7) {
                         if (window.hist7DaysInstance) window.hist7DaysInstance.destroy();
@@ -980,7 +978,7 @@
                         });
                     }
 
-                    // 2. Past 12 Months' Averages Chart (Average of daily totals per month, e.g. Jan avg, Feb avg)
+                    // 2. Past 12 Months' Averages Chart
                     const ctx12M = document.getElementById('hist12MonthsChart');
                     if (ctx12M) {
                         if (window.hist12MInstance) window.hist12MInstance.destroy();
@@ -1004,7 +1002,7 @@
                         });
                     }
 
-                    // 3. Past 5 Years' Averages Chart (Average of daily totals per year)
+                    // 3. Past 5 Years' Averages Chart
                     const ctx5Y = document.getElementById('hist5YearsChart');
                     if (ctx5Y) {
                         if (window.hist5YInstance) window.hist5YInstance.destroy();
