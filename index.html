@@ -399,7 +399,7 @@
                                 <div>
                                     <h3 class="font-bold text-slate-800 text-base">All-Time Historical Sleep Trend</h3>
                                     <p class="text-xs text-slate-400">
-                                        Displaying <span class="font-semibold text-indigo-600" x-text="historicalChartDaysWindow + ' Days'"></span>
+                                        Displaying <span class="font-semibold text-indigo-600" x-text="historicalChartDaysWindow + ' Days'"></span> (Deduplicated logs keep longer duration on duplicate start/stop times)
                                     </p>
                                 </div>
                                 <div class="flex items-center space-x-2 flex-wrap gap-y-2">
@@ -651,7 +651,7 @@
                 },
 
                 loadAllHistoricalData() {
-                    const allLogs = [...this.logs, ...this.allSleepLogsCache];
+                    const allLogs = this.deduplicateSleepLogs([...this.logs, ...this.allSleepLogsCache]);
                     const sleepLogs = allLogs.filter(l => l.category === 'sleep' && l.start_time);
                     if (sleepLogs.length > 0) {
                         const oldestDate = new Date(Math.min(...sleepLogs.map(l => new Date(l.start_time))));
@@ -828,6 +828,52 @@
                     catch (e) { return dateStr; }
                 },
 
+                // DEDUPLICATION FUNCTION: Deduplicates logs with identical IDs or same start/stop times keeping the longest duration
+                deduplicateSleepLogs(logsList) {
+                    const seenIds = new Set();
+                    const uniqueById = [];
+
+                    // 1. Unique by ID first
+                    logsList.forEach(log => {
+                        if (log.id) {
+                            if (!seenIds.has(log.id)) {
+                                seenIds.add(log.id);
+                                uniqueById.push(log);
+                            }
+                        } else {
+                            uniqueById.push(log);
+                        }
+                    });
+
+                    // 2. Group by start_time / end_time timestamp signature to resolve overlaps & keep longest duration
+                    const timeGroupMap = {};
+                    uniqueById.forEach(log => {
+                        if (log.category !== 'sleep') return;
+                        const startKey = log.start_time ? new Date(log.start_time).toISOString().slice(0, 16) : '';
+                        const endKey = log.end_time ? new Date(log.end_time).toISOString().slice(0, 16) : '';
+                        
+                        // Signature prioritizing same start time or same end time
+                        const signature = `${startKey}_${endKey}`;
+
+                        if (!timeGroupMap[signature]) {
+                            timeGroupMap[signature] = log;
+                        } else {
+                            // Compare durations and eliminate the shorter duplicate log
+                            const existingDuration = timeGroupMap[signature].duration_minutes || 0;
+                            const currentDuration = log.duration_minutes || 0;
+                            if (currentDuration > existingDuration) {
+                                timeGroupMap[signature] = log;
+                            }
+                        }
+                    });
+
+                    // 3. Collect non-sleep logs plus deduplicated sleep logs
+                    const nonSleepLogs = uniqueById.filter(l => l.category !== 'sleep');
+                    const deduplicatedSleepLogs = Object.values(timeGroupMap);
+
+                    return [...nonSleepLogs, ...deduplicatedSleepLogs];
+                },
+
                 splitSleepLogsAcrossMidnight(logsToSplit, daysBack) {
                     const splitSegments = [];
                     const maxPreloadDate = new Date();
@@ -871,7 +917,8 @@
                         window.sleepChartInstance = null;
                     }
 
-                    const splitSegments = this.splitSleepLogsAcrossMidnight(this.logs, this.sleepChartDaysWindow);
+                    const cleanLogs = this.deduplicateSleepLogs(this.logs);
+                    const splitSegments = this.splitSleepLogsAcrossMidnight(cleanLogs, this.sleepChartDaysWindow);
                     const daysCount = this.sleepChartDaysWindow;
                     const labels = [], dailyTotalMins = new Array(daysCount).fill(0);
                     const dailySegmentsMap = {}, datesList = [];
@@ -946,7 +993,7 @@
                     });
                 },
 
-                // RENDER HISTORICAL CLONE CHART WITH SHIFTING SUPPORT FOR ALL DATA
+                // RENDER HISTORICAL CLONE CHART WITH DEDUPLICATION & SHIFTING SUPPORT
                 renderHistoricalChart() {
                     const ctx = document.getElementById('historicalSleepChart');
                     if (!ctx) return;
@@ -956,8 +1003,11 @@
                         window.historicalChartInstance = null;
                     }
 
-                    const allCombinedLogs = [...this.logs, ...this.allSleepLogsCache];
-                    const splitSegments = this.splitSleepLogsAcrossMidnight(allCombinedLogs, this.historicalChartDaysWindow);
+                    // Strict Deduplication to eliminate 2-week double counting from overlapping fetches
+                    const rawCombinedLogs = [...this.logs, ...this.allSleepLogsCache];
+                    const cleanCombinedLogs = this.deduplicateSleepLogs(rawCombinedLogs);
+
+                    const splitSegments = this.splitSleepLogsAcrossMidnight(cleanCombinedLogs, this.historicalChartDaysWindow);
                     const daysCount = this.historicalChartDaysWindow;
                     const labels = [], dailyTotalMins = new Array(daysCount).fill(0);
                     const dailySegmentsMap = {}, datesList = [];
