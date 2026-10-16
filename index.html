@@ -93,6 +93,9 @@
                     <button @click="switchTab('sleep_stats')" :class="activeTab === 'sleep_stats' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
                         <i class="fa-solid fa-chart-bar mr-1.5"></i> Sleep Analytics
                     </button>
+                    <button @click="switchTab('historical_sleep')" :class="activeTab === 'historical_sleep' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
+                        <i class="fa-solid fa-clock-rotate-left mr-1.5"></i> Historical Sleep Data
+                    </button>
                     <button @click="switchTab('med_stats')" :class="activeTab === 'med_stats' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
                         <i class="fa-solid fa-chart-pie mr-1.5"></i> Medicine Analytics
                     </button>
@@ -325,7 +328,7 @@
                     </div>
                 </template>
 
-                <!-- TAB: SLEEP ANALYTICS CHART & AVERAGES -->
+                <!-- TAB: SLEEP ANALYTICS CHART & AVERAGES (Preloads 14 days max, displays 7 days initially) -->
                 <template x-if="renderedTabs['sleep_stats']">
                     <div x-show="activeTab === 'sleep_stats'" class="space-y-6">
                         <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -355,17 +358,17 @@
                         <div class="bg-white p-5 rounded-2xl shadow-sm border border-amber-100 space-y-4">
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                 <div>
-                                    <h3 class="font-bold text-slate-800">Sleep Duration Trend</h3>
+                                    <h3 class="font-bold text-slate-800">Sleep Duration Trend (Preloaded 14 Days)</h3>
                                     <p class="text-xs text-slate-400">
                                         Displaying <span class="font-semibold text-indigo-600" x-text="sleepChartDaysWindow + ' Days (' + (sleepChartDaysWindow/7) + ' Week/s)'"></span>
                                     </p>
                                 </div>
                                 <div class="flex items-center space-x-2">
-                                    <button @click="loadPreviousWeek(); renderSleepChart()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg font-medium transition flex items-center">
+                                    <button @click="loadPreviousWeek(); renderSleepChart()" :disabled="sleepChartDaysWindow >= 14" :class="sleepChartDaysWindow >= 14 ? 'opacity-40 cursor-not-allowed' : ''" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg font-medium transition flex items-center">
                                         <i class="fa-solid fa-plus mr-1.5"></i> Load Previous Week (+1 Week)
                                     </button>
                                     <button @click="resetToCurrentWeek(); renderSleepChart()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-medium transition">
-                                        Reset to Current Week
+                                        Reset to 1 Week
                                     </button>
                                 </div>
                             </div>
@@ -381,6 +384,61 @@
                             <!-- Mobile-Optimized Canvas Container -->
                             <div class="relative w-full h-80 min-h-[320px]">
                                 <canvas id="sleepChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- TAB: HISTORICAL SLEEP DATA (Lazy loaded ONLY when selected) -->
+                <template x-if="renderedTabs['historical_sleep']">
+                    <div x-show="activeTab === 'historical_sleep'" class="space-y-6">
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-amber-100 space-y-4">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h3 class="font-bold text-slate-800 text-base">Historical Sleep Data (> 14 Days Ago)</h3>
+                                    <p class="text-xs text-slate-400">Loaded on-demand to maintain mobile performance.</p>
+                                </div>
+                                <button @click="fetchHistoricalSleepLogs()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg font-medium transition">
+                                    <i class="fa-solid fa-rotate mr-1"></i> Refresh Historical Data
+                                </button>
+                            </div>
+
+                            <template x-if="isLoadingHistorical">
+                                <p class="text-xs text-slate-400 text-center py-8">Loading historical sleep logs from database...</p>
+                            </template>
+
+                            <template x-if="!isLoadingHistorical && historicalSleepLogs.length === 0">
+                                <p class="text-xs text-slate-400 text-center py-8">No historical sleep logs found older than 14 days.</p>
+                            </template>
+
+                            <div class="space-y-3" x-show="!isLoadingHistorical">
+                                <template x-for="log in historicalSleepLogs" :key="log.id">
+                                    <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white bg-indigo-500">
+                                                <i class="fa-solid fa-bed"></i>
+                                            </div>
+                                            <div>
+                                                <div class="text-sm font-semibold text-slate-800 capitalize">Sleep Log</div>
+                                                <div class="text-xs text-indigo-600 font-medium">
+                                                    <span x-text="formatTimeInTZ(log.start_time)"></span> – 
+                                                    <span x-text="log.end_time ? formatTimeInTZ(log.end_time) : 'Active'"></span> 
+                                                    <template x-if="log.end_time">
+                                                        <span>(<span x-text="formatDurationHoursMins(log.duration_minutes)"></span>)</span>
+                                                    </template>
+                                                </div>
+                                                <template x-if="log.notes">
+                                                    <div class="text-xs text-slate-600 italic mt-0.5" x-text="'- ' + log.notes"></div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-xs text-slate-400 mr-1" x-text="formatDateInTZ(log.start_time)"></span>
+                                            <button @click="openEditModal(log)" class="text-slate-400 hover:text-indigo-600 p-1 transition"><i class="fa-solid fa-pen-to-square"></i></button>
+                                            <button @click="deleteLog(log.id)" class="text-slate-300 hover:text-rose-500 p-1 transition"><i class="fa-solid fa-trash-can"></i></button>
+                                        </div>
+                                    </div>
+                                </template>
                             </div>
                         </div>
                     </div>
@@ -487,12 +545,15 @@
                     'memo': true,
                     'search': false,
                     'sleep_stats': false,
+                    'historical_sleep': false,
                     'med_stats': false,
                     'settings': false,
                     'import': false
                 },
 
                 logs: [],
+                historicalSleepLogs: [],
+                isLoadingHistorical: false,
                 currentTimezone: localStorage.getItem('baby_tz') || 'America/Los_Angeles',
                 liveClock: '',
 
@@ -516,6 +577,7 @@
                 showEditModal: false,
                 editingLog: {},
 
+                // Initial view is 7 days (1 week), expandable up to preloaded 14 days (2 weeks)
                 sleepChartDaysWindow: 7,
 
                 switchTab(tabName) {
@@ -524,17 +586,22 @@
 
                     if (tabName === 'sleep_stats') {
                         this.$nextTick(() => {
-                            setTimeout(() => this.renderSleepChart(), 30);
+                            setTimeout(() => this.renderSleepChart(), 40);
                         });
+                    } else if (tabName === 'historical_sleep') {
+                        this.fetchHistoricalSleepLogs();
                     } else if (tabName === 'med_stats') {
                         this.$nextTick(() => {
-                            setTimeout(() => this.renderMedChart(), 30);
+                            setTimeout(() => this.renderMedChart(), 40);
                         });
                     }
                 },
 
                 loadPreviousWeek() {
-                    this.sleepChartDaysWindow += 7;
+                    if (this.sleepChartDaysWindow < 14) {
+                        this.sleepChartDaysWindow += 7;
+                        if (this.sleepChartDaysWindow > 14) this.sleepChartDaysWindow = 14;
+                    }
                 },
 
                 resetToCurrentWeek() {
@@ -651,10 +718,39 @@
                 async logout() {
                     await supabaseClient.auth.signOut();
                     this.logs = [];
+                    this.historicalSleepLogs = [];
                 },
+
+                // Preloads ONLY recent logs (last 14 days) to protect mobile RAM
                 async fetchLogs() {
-                    const { data } = await supabaseClient.from('baby_logs').select('*').order('start_time', { ascending: false });
+                    const cutoffDate = new Date();
+                    cutoffDate.setDate(cutoffDate.getDate() - 14);
+
+                    const { data } = await supabaseClient
+                        .from('baby_logs')
+                        .select('*')
+                        .gte('start_time', cutoffDate.toISOString())
+                        .order('start_time', { ascending: false });
                     this.logs = data || [];
+                },
+
+                // Lazy loads historical sleep logs (> 14 days ago) ONLY when Historical Sleep tab is opened
+                async fetchHistoricalSleepLogs() {
+                    if (this.historicalSleepLogs.length > 0) return; // already loaded
+                    this.isLoadingHistorical = true;
+
+                    const cutoffDate = new Date();
+                    cutoffDate.setDate(cutoffDate.getDate() - 14);
+
+                    const { data } = await supabaseClient
+                        .from('baby_logs')
+                        .select('*')
+                        .eq('category', 'sleep')
+                        .lt('start_time', cutoffDate.toISOString())
+                        .order('start_time', { ascending: false });
+
+                    this.historicalSleepLogs = data || [];
+                    this.isLoadingHistorical = false;
                 },
 
                 formatDurationHoursMins(totalMins) {
@@ -671,7 +767,6 @@
                     catch (e) { return dateStr; }
                 },
 
-                // Optimized Lightweight Midnight Splitting
                 splitSleepLogsAcrossMidnight() {
                     const splitSegments = [];
                     const maxPreloadDate = new Date();
@@ -765,7 +860,7 @@
                         options: { 
                             responsive: true, 
                             maintainAspectRatio: false,
-                            devicePixelRatio: Math.min(window.devicePixelRatio || 1, 1.5), // Optimized for mobile GPU
+                            devicePixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
                             resizeDelay: 150,
                             plugins: {
                                 legend: { display: false },
