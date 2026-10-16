@@ -76,31 +76,31 @@
             <div>
                 <!-- Navigation Tabs -->
                 <div class="flex space-x-2 border-b border-amber-200 mb-6 pb-2 overflow-x-auto">
-                    <button @click="activeTab = 'all'" :class="activeTab === 'all' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
+                    <button @click="switchTab('all')" :class="activeTab === 'all' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
                         <i class="fa-solid fa-list mr-1.5"></i> All Logs
                     </button>
-                    <button @click="activeTab = 'sleep'" :class="activeTab === 'sleep' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
+                    <button @click="switchTab('sleep')" :class="activeTab === 'sleep' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
                         <i class="fa-solid fa-bed mr-1.5"></i> Sleep Logs
                     </button>
-                    <button @click="activeTab = 'medicine'" :class="activeTab === 'medicine' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
+                    <button @click="switchTab('medicine')" :class="activeTab === 'medicine' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
                         <i class="fa-solid fa-pills mr-1.5"></i> Medicine Logs
                     </button>
-                    <button @click="activeTab = 'memo'" :class="activeTab === 'memo' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
+                    <button @click="switchTab('memo')" :class="activeTab === 'memo' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
                         <i class="fa-solid fa-note-sticky mr-1.5"></i> Memo Logs
                     </button>
-                    <button @click="activeTab = 'search'" :class="activeTab === 'search' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
+                    <button @click="switchTab('search')" :class="activeTab === 'search' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
                         <i class="fa-solid fa-magnifying-glass mr-1.5"></i> Log Search & History
                     </button>
-                    <button @click="activeTab = 'sleep_stats'; $nextTick(() => renderSleepChart())" :class="activeTab === 'sleep_stats' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
+                    <button @click="switchTab('sleep_stats')" :class="activeTab === 'sleep_stats' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
                         <i class="fa-solid fa-chart-bar mr-1.5"></i> Sleep Analytics
                     </button>
-                    <button @click="activeTab = 'med_stats'; $nextTick(() => renderMedChart())" :class="activeTab === 'med_stats' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
+                    <button @click="switchTab('med_stats')" :class="activeTab === 'med_stats' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
                         <i class="fa-solid fa-chart-pie mr-1.5"></i> Medicine Analytics
                     </button>
-                    <button @click="activeTab = 'settings'" :class="activeTab === 'settings' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
+                    <button @click="switchTab('settings')" :class="activeTab === 'settings' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
                         <i class="fa-solid fa-gear mr-1.5"></i> Settings
                     </button>
-                    <button @click="activeTab = 'import'" :class="activeTab === 'import' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
+                    <button @click="switchTab('import')" :class="activeTab === 'import' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-amber-100'" class="px-4 py-2 rounded-xl font-medium text-sm transition whitespace-nowrap">
                         <i class="fa-solid fa-file-csv mr-1.5"></i> CSV Import/Export
                     </button>
                 </div>
@@ -242,246 +242,255 @@
                     </div>
                 </div>
 
-                <!-- TAB: ADVANCED LOG SEARCH & HISTORICAL FILTERING -->
-                <div x-show="activeTab === 'search'" class="space-y-6">
-                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-indigo-100 space-y-4">
-                        <h3 class="font-bold text-slate-800 text-base">Search Historical Logs</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <!-- TAB: ADVANCED LOG SEARCH & HISTORICAL FILTERING (LAZY LOADED) -->
+                <template x-if="renderedTabs['search']">
+                    <div x-show="activeTab === 'search'" class="space-y-6">
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-indigo-100 space-y-4">
+                            <h3 class="font-bold text-slate-800 text-base">Search Historical Logs</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                                <div>
+                                    <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Filter by Log Category</label>
+                                    <select x-model="searchCategory" class="w-full text-xs px-3 py-2 border rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                        <option value="all">All Categories</option>
+                                        <option value="sleep">Sleep Logs Only</option>
+                                        <option value="medicine">Medicine Logs Only</option>
+                                        <option value="memo">Memo Logs Only</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Filter Date</label>
+                                    <input type="date" x-model="searchDate" class="w-full text-xs px-3 py-2 border rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Search Keywords</label>
+                                    <input type="text" x-model="searchQuery" placeholder="Search title or notes..." class="w-full text-xs px-3 py-2 border rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                </div>
+                                <div class="flex items-end">
+                                    <button @click="searchDate = ''; searchQuery = ''; searchCategory = 'all'" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-2 rounded-xl transition">Reset Filters</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filtered Historical Logs Table -->
+                        <div class="bg-white rounded-2xl shadow-sm border border-amber-100 p-5">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="font-bold text-slate-800 text-sm">Matching Historical Logs</span>
+                                <span class="text-xs text-slate-400" x-text="'(' + searchedHistoricalLogs.length + ' results found)'"></span>
+                            </div>
+                            <div class="space-y-3">
+                                <template x-for="log in searchedHistoricalLogs" :key="log.id">
+                                    <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white"
+                                                :class="{
+                                                    'bg-indigo-500': log.category === 'sleep',
+                                                    'bg-emerald-500': log.category === 'medicine',
+                                                    'bg-amber-500': log.category === 'memo'
+                                                }">
+                                                <i class="fa-solid" :class="{
+                                                    'fa-bed': log.category === 'sleep',
+                                                    'fa-pills': log.category === 'medicine',
+                                                    'fa-note-sticky': log.category === 'memo'
+                                                }"></i>
+                                            </div>
+                                            <div>
+                                                <div class="text-sm font-semibold text-slate-800 capitalize" x-text="log.category"></div>
+                                                <template x-if="log.category === 'sleep'">
+                                                    <div class="text-xs text-indigo-600 font-medium">
+                                                        <span x-text="formatTimeInTZ(log.start_time)"></span> – 
+                                                        <span x-text="log.end_time ? formatTimeInTZ(log.end_time) : 'Active'"></span> 
+                                                        <template x-if="log.end_time">
+                                                            <span>(<span x-text="formatDurationHoursMins(log.duration_minutes)"></span>)</span>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                                <template x-if="log.category !== 'sleep'">
+                                                    <div class="text-xs text-slate-500" x-text="formatLogDetails(log)"></div>
+                                                </template>
+                                                <template x-if="log.notes && log.category !== 'memo'">
+                                                    <div class="text-xs text-slate-600 italic mt-0.5" x-text="'- ' + log.notes"></div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-xs text-slate-400 mr-1" x-text="formatDateInTZ(log.start_time || log.created_at)"></span>
+                                            <button @click="openEditModal(log)" class="text-slate-400 hover:text-indigo-600 p-1 transition"><i class="fa-solid fa-pen-to-square"></i></button>
+                                            <button @click="deleteLog(log.id)" class="text-slate-300 hover:text-rose-500 p-1 transition"><i class="fa-solid fa-trash-can"></i></button>
+                                        </div>
+                                    </div>
+                                </template>
+                                <template x-if="searchedHistoricalLogs.length === 0">
+                                    <p class="text-sm text-slate-400 text-center py-8">No historical logs match your search filters.</p>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- TAB: SLEEP ANALYTICS CHART & AVERAGES (LAZY LOADED) -->
+                <template x-if="renderedTabs['sleep_stats']">
+                    <div x-show="activeTab === 'sleep_stats'" class="space-y-6">
+                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                            <div class="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100">
+                                <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (7 Days)</div>
+                                <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleep7Days"></div>
+                            </div>
+                            <div class="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100">
+                                <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (30 Days)</div>
+                                <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleep30Days"></div>
+                            </div>
+                            <div class="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100">
+                                <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (90 Days)</div>
+                                <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleep90Days"></div>
+                            </div>
+                            <div class="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100">
+                                <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (Last Year)</div>
+                                <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleepYear"></div>
+                            </div>
+                            <div class="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100">
+                                <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (All Time)</div>
+                                <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleepAll"></div>
+                            </div>
+                        </div>
+
+                        <!-- Stacked Sleep Chart & Windowing Controls -->
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-amber-100 space-y-4">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <div>
+                                    <h3 class="font-bold text-slate-800">Sleep Duration Trend</h3>
+                                    <p class="text-xs text-slate-400">
+                                        Showing <span class="font-semibold text-indigo-600" x-text="sleepChartDaysWindow + ' Days (' + (sleepChartDaysWindow/7) + ' Weeks)'"></span> — Midnight cutoffs & split bars synchronized to <span class="font-semibold text-indigo-600" x-text="currentTimezone"></span>
+                                    </p>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button @click="loadMoreSleepWeeks(); renderSleepChart()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg font-medium transition flex items-center">
+                                        <i class="fa-solid fa-plus mr-1.5"></i> Load +2 Weeks More
+                                    </button>
+                                    <button @click="resetSleepWeeks(); renderSleepChart()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-medium transition">
+                                        Reset to 4 Weeks
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Selected Date & Log Info Row -->
+                            <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fa-solid fa-calendar-day text-indigo-500"></i>
+                                    <span class="font-semibold text-slate-700">Selected Date:</span>
+                                    <span class="font-bold text-indigo-900" x-text="selectedChartDateInfo">Hover or click a bar</span>
+                                </div>
+                                <div class="flex items-center space-x-4">
+                                    <div>
+                                        <span class="font-semibold text-slate-700">Total Daily Sleep:</span>
+                                        <span class="font-bold text-indigo-600" x-text="selectedChartTotalSleep">--</span>
+                                    </div>
+                                    <div>
+                                        <span class="font-semibold text-slate-700">Selected Segment Duration:</span>
+                                        <span class="font-bold text-pink-600" x-text="selectedChartLogDuration">--</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Custom Legend -->
+                            <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-600 pt-1 border-t border-slate-100">
+                                <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#34d399] inline-block"></span><span>&ge; 8 hours total session (Green)</span></div>
+                                <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#60a5fa] inline-block"></span><span>4 to 8 hours (Blue)</span></div>
+                                <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#fbbf24] inline-block"></span><span>1 to 4 hours (Yellow)</span></div>
+                                <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#f472b6] inline-block"></span><span>&lt; 1 hour (Light Pink)</span></div>
+                            </div>
+
+                            <div class="relative h-80">
+                                <canvas id="sleepChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- TAB: MEDICINE ANALYTICS & DETAILED TABLE (LAZY LOADED) -->
+                <template x-if="renderedTabs['med_stats']">
+                    <div x-show="activeTab === 'med_stats'" class="space-y-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div class="bg-white p-4 rounded-2xl shadow-sm border border-emerald-100">
+                                <div class="text-xs font-semibold text-slate-400 uppercase">Total Doses Logged</div>
+                                <div class="text-2xl font-bold text-emerald-600 mt-1" x-text="medicineLogs.length"></div>
+                            </div>
+                            <div class="bg-white p-4 rounded-2xl shadow-sm border border-emerald-100">
+                                <div class="text-xs font-semibold text-slate-400 uppercase">Unique Medications</div>
+                                <div class="text-2xl font-bold text-emerald-600 mt-1" x-text="uniqueMedicineCount"></div>
+                            </div>
+                            <div class="bg-white p-4 rounded-2xl shadow-sm border border-emerald-100">
+                                <div class="text-xs font-semibold text-slate-400 uppercase">Total Volume (ML)</div>
+                                <div class="text-2xl font-bold text-emerald-600 mt-1" x-text="totalMedVolume + ' ml'"></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-emerald-100">
+                            <h3 class="font-bold text-slate-800 mb-4">Medication Dose Counts</h3>
+                            <div class="relative h-64">
+                                <canvas id="medChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- TAB: SETTINGS (LAZY LOADED) -->
+                <template x-if="renderedTabs['settings']">
+                    <div x-show="activeTab === 'settings'" class="space-y-6">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-amber-100 max-w-lg space-y-4">
+                            <h3 class="font-bold text-slate-800 text-lg">App Settings</h3>
                             <div>
-                                <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Filter by Log Category</label>
-                                <select x-model="searchCategory" class="w-full text-xs px-3 py-2 border rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                                    <option value="all">All Categories</option>
-                                    <option value="sleep">Sleep Logs Only</option>
-                                    <option value="medicine">Medicine Logs Only</option>
-                                    <option value="memo">Memo Logs Only</option>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Timezone Preference</label>
+                                <select x-model="currentTimezone" @change="saveTimezonePreference()" class="w-full text-xs px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <option value="America/Los_Angeles">Pacific Time (PT - America/Los_Angeles)</option>
+                                    <option value="America/New_York">Eastern Time (ET - America/New_York)</option>
+                                    <option value="America/Chicago">Central Time (CT - America/Chicago)</option>
+                                    <option value="America/Denver">Mountain Time (MT - America/Denver)</option>
+                                    <option value="Europe/London">Greenwich Mean Time (GMT - London)</option>
+                                    <option value="Asia/Taipei">Taipei / Hong Kong (CST)</option>
+                                    <option value="UTC">UTC</option>
                                 </select>
-                            </div>
-                            <div>
-                                <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Filter Date</label>
-                                <input type="date" x-model="searchDate" class="w-full text-xs px-3 py-2 border rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Search Keywords</label>
-                                <input type="text" x-model="searchQuery" placeholder="Search title or notes..." class="w-full text-xs px-3 py-2 border rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                            </div>
-                            <div class="flex items-end">
-                                <button @click="searchDate = ''; searchQuery = ''; searchCategory = 'all'" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-2 rounded-xl transition">Reset Filters</button>
+                                <p class="text-[11px] text-slate-400 mt-1">All time inputs and log displays will automatically adjust to this timezone.</p>
                             </div>
                         </div>
                     </div>
+                </template>
 
-                    <!-- Filtered Historical Logs Table -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-amber-100 p-5">
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="font-bold text-slate-800 text-sm">Matching Historical Logs</span>
-                            <span class="text-xs text-slate-400" x-text="'(' + searchedHistoricalLogs.length + ' results found)'"></span>
-                        </div>
-                        <div class="space-y-3">
-                            <template x-for="log in searchedHistoricalLogs" :key="log.id">
-                                <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition">
-                                    <div class="flex items-center space-x-3">
-                                        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white"
-                                            :class="{
-                                                'bg-indigo-500': log.category === 'sleep',
-                                                'bg-emerald-500': log.category === 'medicine',
-                                                'bg-amber-500': log.category === 'memo'
-                                            }">
-                                            <i class="fa-solid" :class="{
-                                                'fa-bed': log.category === 'sleep',
-                                                'fa-pills': log.category === 'medicine',
-                                                'fa-note-sticky': log.category === 'memo'
-                                            }"></i>
-                                        </div>
-                                        <div>
-                                            <div class="text-sm font-semibold text-slate-800 capitalize" x-text="log.category"></div>
-                                            <template x-if="log.category === 'sleep'">
-                                                <div class="text-xs text-indigo-600 font-medium">
-                                                    <span x-text="formatTimeInTZ(log.start_time)"></span> – 
-                                                    <span x-text="log.end_time ? formatTimeInTZ(log.end_time) : 'Active'"></span> 
-                                                    <template x-if="log.end_time">
-                                                        <span>(<span x-text="formatDurationHoursMins(log.duration_minutes)"></span>)</span>
-                                                    </template>
-                                                </div>
-                                            </template>
-                                            <template x-if="log.category !== 'sleep'">
-                                                <div class="text-xs text-slate-500" x-text="formatLogDetails(log)"></div>
-                                            </template>
-                                            <template x-if="log.notes && log.category !== 'memo'">
-                                                <div class="text-xs text-slate-600 italic mt-0.5" x-text="'- ' + log.notes"></div>
-                                            </template>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center space-x-2">
-                                        <span class="text-xs text-slate-400 mr-1" x-text="formatDateInTZ(log.start_time || log.created_at)"></span>
-                                        <button @click="openEditModal(log)" class="text-slate-400 hover:text-indigo-600 p-1 transition"><i class="fa-solid fa-pen-to-square"></i></button>
-                                        <button @click="deleteLog(log.id)" class="text-slate-300 hover:text-rose-500 p-1 transition"><i class="fa-solid fa-trash-can"></i></button>
-                                    </div>
+                <!-- TAB: CSV IMPORT / EXPORT (LAZY LOADED) -->
+                <template x-if="renderedTabs['import']">
+                    <div x-show="activeTab === 'import'" class="space-y-6">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-amber-100 space-y-6">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-lg mb-1">Export Data to CSV</h3>
+                                <p class="text-sm text-slate-500 mb-3">Download your complete activity log as a backup or spreadsheet file.</p>
+                                <button @click="exportCSV()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-xl text-sm transition">
+                                    <i class="fa-solid fa-download mr-2"></i> Download CSV Export
+                                </button>
+                            </div>
+                            <hr class="border-amber-100">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-lg mb-1">Method 1: Upload Nara Baby CSV File</h3>
+                                <p class="text-sm text-slate-500 mb-3">Select your official Nara Baby export CSV file.</p>
+                                <div class="space-y-3">
+                                    <input type="file" @change="csvFile = $event.target.files[0]" accept=".csv" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition">
+                                    <button @click="processCSVFileImport()" :disabled="!csvFile || isImporting" :class="csvFile && !isImporting ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'" class="font-medium px-4 py-2 rounded-xl text-sm transition flex items-center">
+                                        <i class="fa-solid fa-upload mr-2"></i> <span x-text="isImporting ? 'Importing File...' : 'Upload and Import CSV File'"></span>
+                                    </button>
                                 </div>
-                            </template>
-                            <template x-if="searchedHistoricalLogs.length === 0">
-                                <p class="text-sm text-slate-400 text-center py-8">No historical logs match your search filters.</p>
-                            </template>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TAB: SLEEP ANALYTICS CHART & AVERAGES -->
-                <div x-show="activeTab === 'sleep_stats'" class="space-y-6">
-                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                        <div class="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100">
-                            <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (7 Days)</div>
-                            <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleep7Days"></div>
-                        </div>
-                        <div class="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100">
-                            <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (30 Days)</div>
-                            <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleep30Days"></div>
-                        </div>
-                        <div class="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100">
-                            <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (90 Days)</div>
-                            <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleep90Days"></div>
-                        </div>
-                        <div class="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100">
-                            <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (Last Year)</div>
-                            <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleepYear"></div>
-                        </div>
-                        <div class="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100">
-                            <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (All Time)</div>
-                            <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleepAll"></div>
-                        </div>
-                    </div>
-
-                    <!-- Stacked Sleep Chart & Selected Date Info Row -->
-                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-amber-100 space-y-4">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            </div>
+                            <hr class="border-amber-100">
                             <div>
-                                <h3 class="font-bold text-slate-800">7-Day Stacked Sleep Duration Trend</h3>
-                                <p class="text-xs text-slate-400">Midnight cutoffs synchronized to <span class="font-semibold text-indigo-600" x-text="currentTimezone"></span></p>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <button @click="shiftDays(-1); renderSleepChart()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition">
-                                    <i class="fa-solid fa-chevron-left mr-1"></i> Previous 1 Day
-                                </button>
-                                <button @click="resetDays(); renderSleepChart()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-2.5 py-1.5 rounded-lg font-medium transition">
-                                    Today
-                                </button>
-                                <button @click="shiftDays(1); renderSleepChart()" :disabled="chartOffsetDays >= 0" :class="chartOffsetDays >= 0 ? 'opacity-40 cursor-not-allowed' : ''" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition">
-                                    Next 1 Day <i class="fa-solid fa-chevron-right ml-1"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Selected Date & Log Info Row -->
-                        <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
-                            <div class="flex items-center space-x-2">
-                                <i class="fa-solid fa-calendar-day text-indigo-500"></i>
-                                <span class="font-semibold text-slate-700">Selected Date:</span>
-                                <span class="font-bold text-indigo-900" x-text="selectedChartDateInfo">Hover or click a bar</span>
-                            </div>
-                            <div class="flex items-center space-x-4">
-                                <div>
-                                    <span class="font-semibold text-slate-700">Total Daily Sleep:</span>
-                                    <span class="font-bold text-indigo-600" x-text="selectedChartTotalSleep">--</span>
-                                </div>
-                                <div>
-                                    <span class="font-semibold text-slate-700">Selected Log Duration:</span>
-                                    <span class="font-bold text-pink-600" x-text="selectedChartLogDuration">--</span>
+                                <h3 class="font-bold text-slate-800 text-lg mb-1">Method 2: Paste Raw CSV Data</h3>
+                                <p class="text-sm text-slate-500 mb-3">Open your CSV file in a text editor, copy all text, and paste it below:</p>
+                                <div class="space-y-3">
+                                    <textarea x-model="rawCsvText" rows="6" placeholder="Type,Profile Name,Start Date/time,..." class="w-full text-xs font-mono p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                                    <button @click="processCSVPasteImport()" :disabled="!rawCsvText.trim() || isImporting" :class="rawCsvText.trim() && !isImporting ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'" class="font-medium px-4 py-2 rounded-xl text-sm transition flex items-center">
+                                        <i class="fa-solid fa-paste mr-2"></i> <span x-text="isImporting ? 'Importing Pasted Data...' : 'Import Pasted CSV Data'"></span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Custom Legend -->
-                        <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-600 pt-1 border-t border-slate-100">
-                            <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#34d399] inline-block"></span><span>&ge; 8 hours (Green)</span></div>
-                            <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#60a5fa] inline-block"></span><span>4 to 8 hours (Blue)</span></div>
-                            <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#fbbf24] inline-block"></span><span>1 to 4 hours (Yellow)</span></div>
-                            <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#f472b6] inline-block"></span><span>&lt; 1 hour (Light Pink)</span></div>
-                        </div>
-
-                        <div class="relative h-80">
-                            <canvas id="sleepChart"></canvas>
-                        </div>
                     </div>
-                </div>
-
-                <!-- TAB: MEDICINE ANALYTICS & DETAILED TABLE -->
-                <div x-show="activeTab === 'med_stats'" class="space-y-6">
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-emerald-100">
-                            <div class="text-xs font-semibold text-slate-400 uppercase">Total Doses Logged</div>
-                            <div class="text-2xl font-bold text-emerald-600 mt-1" x-text="medicineLogs.length"></div>
-                        </div>
-                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-emerald-100">
-                            <div class="text-xs font-semibold text-slate-400 uppercase">Unique Medications</div>
-                            <div class="text-2xl font-bold text-emerald-600 mt-1" x-text="uniqueMedicineCount"></div>
-                        </div>
-                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-emerald-100">
-                            <div class="text-xs font-semibold text-slate-400 uppercase">Total Volume (ML)</div>
-                            <div class="text-2xl font-bold text-emerald-600 mt-1" x-text="totalMedVolume + ' ml'"></div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-emerald-100">
-                        <h3 class="font-bold text-slate-800 mb-4">Medication Dose Counts</h3>
-                        <div class="relative h-64">
-                            <canvas id="medChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TAB: SETTINGS (TIMEZONE CONFIG) -->
-                <div x-show="activeTab === 'settings'" class="space-y-6">
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-amber-100 max-w-lg space-y-4">
-                        <h3 class="font-bold text-slate-800 text-lg">App Settings</h3>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Timezone Preference</label>
-                            <select x-model="currentTimezone" @change="saveTimezonePreference()" class="w-full text-xs px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                <option value="America/Los_Angeles">Pacific Time (PT - America/Los_Angeles)</option>
-                                <option value="America/New_York">Eastern Time (ET - America/New_York)</option>
-                                <option value="America/Chicago">Central Time (CT - America/Chicago)</option>
-                                <option value="America/Denver">Mountain Time (MT - America/Denver)</option>
-                                <option value="Europe/London">Greenwich Mean Time (GMT - London)</option>
-                                <option value="Asia/Taipei">Taipei / Hong Kong (CST)</option>
-                                <option value="UTC">UTC</option>
-                            </select>
-                            <p class="text-[11px] text-slate-400 mt-1">All time inputs and log displays will automatically adjust to this timezone.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TAB: CSV IMPORT / EXPORT -->
-                <div x-show="activeTab === 'import'" class="space-y-6">
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-amber-100 space-y-6">
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-lg mb-1">Export Data to CSV</h3>
-                            <p class="text-sm text-slate-500 mb-3">Download your complete activity log as a backup or spreadsheet file.</p>
-                            <button @click="exportCSV()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-xl text-sm transition">
-                                <i class="fa-solid fa-download mr-2"></i> Download CSV Export
-                            </button>
-                        </div>
-                        <hr class="border-amber-100">
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-lg mb-1">Method 1: Upload Nara Baby CSV File</h3>
-                            <p class="text-sm text-slate-500 mb-3">Select your official Nara Baby export CSV file.</p>
-                            <div class="space-y-3">
-                                <input type="file" @change="csvFile = $event.target.files[0]" accept=".csv" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition">
-                                <button @click="processCSVFileImport()" :disabled="!csvFile || isImporting" :class="csvFile && !isImporting ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'" class="font-medium px-4 py-2 rounded-xl text-sm transition flex items-center">
-                                    <i class="fa-solid fa-upload mr-2"></i> <span x-text="isImporting ? 'Importing File...' : 'Upload and Import CSV File'"></span>
-                                </button>
-                            </div>
-                        </div>
-                        <hr class="border-amber-100">
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-lg mb-1">Method 2: Paste Raw CSV Data</h3>
-                            <p class="text-sm text-slate-500 mb-3">Open your CSV file in a text editor, copy all text, and paste it below:</p>
-                            <div class="space-y-3">
-                                <textarea x-model="rawCsvText" rows="6" placeholder="Type,Profile Name,Start Date/time,..." class="w-full text-xs font-mono p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-                                <button @click="processCSVPasteImport()" :disabled="!rawCsvText.trim() || isImporting" :class="rawCsvText.trim() && !isImporting ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'" class="font-medium px-4 py-2 rounded-xl text-sm transition flex items-center">
-                                    <i class="fa-solid fa-paste mr-2"></i> <span x-text="isImporting ? 'Importing Pasted Data...' : 'Import Pasted CSV Data'"></span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                </template>
 
             </div>
         </template>
@@ -543,8 +552,8 @@
 
     <!-- Supabase & App Logic Script -->
     <script>
-        const SUPABASE_URL = 'https://gzrpvwpyeekjyycfalpz.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6cnB2d3B5ZWVranl5Y2ZhbHB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5MjcxODMsImV4cCI6MjEwNzUwMzE4M30.c-HAoPBjw0uC1LxBvD1yPWleWldiAZ6NeFIRTdir7l0';
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -555,6 +564,20 @@
                 authPassword: '',
                 authError: '',
                 activeTab: 'all',
+                
+                // Feature 1: Lazy Rendering State for Tabs
+                renderedTabs: {
+                    'all': true,
+                    'sleep': true,
+                    'medicine': true,
+                    'memo': true,
+                    'search': false,
+                    'sleep_stats': false,
+                    'med_stats': false,
+                    'settings': false,
+                    'import': false
+                },
+
                 logs: [],
                 
                 currentTimezone: localStorage.getItem('baby_tz') || 'America/Los_Angeles',
@@ -581,15 +604,37 @@
                 showEditModal: false,
                 editingLog: {},
 
-                chartOffsetDays: 0,
+                // Feature 2: Sleep Chart Windowing (4 weeks default)
+                sleepChartDaysWindow: 28,
 
                 selectedChartDateInfo: 'None selected',
                 selectedChartTotalSleep: '--',
                 selectedChartLogDuration: '--',
 
+                switchTab(tabName) {
+                    this.activeTab = tabName;
+                    this.renderedTabs[tabName] = true;
+
+                    if (tabName === 'sleep_stats') {
+                        this.$nextTick(() => this.renderSleepChart());
+                    } else if (tabName === 'med_stats') {
+                        this.$nextTick(() => this.renderMedChart());
+                    }
+                },
+
+                loadMoreSleepWeeks() {
+                    this.sleepChartDaysWindow += 14;
+                },
+
+                resetSleepWeeks() {
+                    this.sleepChartDaysWindow = 28;
+                },
+
                 saveTimezonePreference() {
                     localStorage.setItem('baby_tz', this.currentTimezone);
-                    this.renderSleepChart();
+                    if (this.renderedTabs['sleep_stats']) {
+                        this.renderSleepChart();
+                    }
                 },
 
                 toggleCurrentTime(event) {
@@ -611,7 +656,6 @@
                     return this.logs.find(l => l.category === 'sleep' && !l.end_time);
                 },
 
-                // Solution 1A: Optimized Feed View - Limits DOM payload to recent 30 entries
                 get filteredLogs() {
                     let list = this.logs;
                     if (this.activeTab === 'sleep') list = this.logs.filter(l => l.category === 'sleep');
@@ -621,7 +665,6 @@
                     return list.slice(0, 30);
                 },
 
-                // Solution 1A: Dedicated Search Tab Engine
                 get searchedHistoricalLogs() {
                     let list = [...this.logs];
                     if (this.searchCategory !== 'all') {
@@ -917,15 +960,6 @@
                     }
                 },
 
-                shiftDays(delta) {
-                    this.chartOffsetDays += delta;
-                    if (this.chartOffsetDays > 0) this.chartOffsetDays = 0;
-                },
-
-                resetDays() {
-                    this.chartOffsetDays = 0;
-                },
-
                 exportCSV() {
                     let csv = 'category,start_time,end_time,duration_minutes,title,amount,unit,notes\n';
                     this.logs.forEach(l => {
@@ -1022,74 +1056,136 @@
                     });
                 },
 
-                // Solutions 1B, 2A & 2B: Strict memory cleanup, explicit min/max bounds & forced 0.5h gridlines
+                // Feature 3: Midnight Bar Splitting Algorithm + Source Bar Color Preservation
+                splitSleepLogsAcrossMidnight() {
+                    const splitSegments = [];
+                    const sleepLogs = this.logs.filter(l => l.category === 'sleep' && l.start_time && l.end_time);
+
+                    sleepLogs.forEach(log => {
+                        const totalDurationMins = log.duration_minutes || 0;
+                        const totalHours = totalDurationMins / 60;
+
+                        // Original source color classification based on total session length
+                        let sourceColor = '#f472b6'; // Light Pink (< 1h)
+                        if (totalHours >= 8) sourceColor = '#34d399';      // Green (>= 8h)
+                        else if (totalHours >= 4) sourceColor = '#60a5fa'; // Blue (4h to <8h)
+                        else if (totalHours >= 1) sourceColor = '#fbbf24'; // Yellow (1h to <4h)
+
+                        let currStart = new Date(log.start_time);
+                        const end = new Date(log.end_time);
+
+                        while (currStart < end) {
+                            // Find midnight bound in current user timezone
+                            const tzCurrStartStr = currStart.toLocaleString('en-US', { timeZone: this.currentTimezone });
+                            const tzCurrStart = new Date(tzCurrStartStr);
+                            
+                            const tzNextMidnight = new Date(tzCurrStart);
+                            tzNextMidnight.setHours(24, 0, 0, 0); // Midnight end of day
+
+                            // Convert local midnight back to UTC Date
+                            const diffMsToMidnight = tzNextMidnight - tzCurrStart;
+                            let currSegmentEnd = new Date(currStart.getTime() + diffMsToMidnight);
+
+                            if (currSegmentEnd > end) {
+                                currSegmentEnd = end;
+                            }
+
+                            const segMins = Math.max(1, Math.round((currSegmentEnd - currStart) / 60000));
+                            const segDateStr = this.getLocalDateString(currStart.toISOString());
+
+                            splitSegments.push({
+                                logId: log.id,
+                                dateStr: segDateStr,
+                                durationMinutes: segMins,
+                                sourceColor: sourceColor,
+                                totalSessionMins: totalDurationMins
+                            });
+
+                            currStart = currSegmentEnd;
+                        }
+                    });
+
+                    return splitSegments;
+                },
+
+                // Render Sleep Chart with Windowing and Split Midnight Bars
                 renderSleepChart() {
-                    const ctx = document.getElementById('sleepChart').getContext('2d');
-                    
-                    // Solution 1B: Clean up old instance to free memory on mobile
+                    const ctx = document.getElementById('sleepChart');
+                    if (!ctx) return;
+
                     if (window.sleepChartInstance) window.sleepChartInstance.destroy();
 
+                    const splitSegments = this.splitSleepLogsAcrossMidnight();
+                    const daysCount = this.sleepChartDaysWindow;
                     const labels = [];
-                    const maxSessionsPerDay = 6;
-                    const datasets = [];
-                    const dailyTotalMins = new Array(7).fill(0);
-                    let maxDailyHoursFound = 12; // Base scale boundary
+                    const dailyTotalMins = new Array(daysCount).fill(0);
 
-                    for (let s = 0; s < maxSessionsPerDay; s++) {
+                    // Group split segments by date
+                    const dailySegmentsMap = {};
+                    const datesList = [];
+
+                    for (let i = daysCount - 1; i >= 0; i--) {
+                        let baseDate = new Date();
+                        let tzNowStr = baseDate.toLocaleString('en-US', { timeZone: this.currentTimezone });
+                        let tzNow = new Date(tzNowStr);
+                        tzNow.setDate(tzNow.getDate() - i);
+
+                        const pad = (n) => String(n).padStart(2, '0');
+                        let dateStr = `${tzNow.getFullYear()}-${pad(tzNow.getMonth()+1)}-${pad(tzNow.getDate())}`;
+                        datesList.push(dateStr);
+
+                        let dayName = tzNow.toLocaleDateString([], { weekday: 'short' });
+                        let dateFormatted = tzNow.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                        labels.push(`${dayName}, ${dateFormatted}`);
+
+                        dailySegmentsMap[dateStr] = splitSegments.filter(s => s.dateStr === dateStr);
+                    }
+
+                    // Determine max number of sessions in any single day within window
+                    let maxSessionsInWindow = 1;
+                    datesList.forEach(dStr => {
+                        const segs = dailySegmentsMap[dStr] || [];
+                        if (segs.length > maxSessionsInWindow) maxSessionsInWindow = segs.length;
+                    });
+
+                    const datasets = [];
+                    for (let s = 0; s < maxSessionsInWindow; s++) {
                         datasets.push({
-                            label: `Session ${s+1}`,
-                            data: new Array(7).fill(0),
-                            durationMinsArray: new Array(7).fill(0),
-                            dateLabelArray: new Array(7).fill(''),
-                            backgroundColor: [],
+                            label: `Segment ${s+1}`,
+                            data: new Array(daysCount).fill(0),
+                            durationMinsArray: new Array(daysCount).fill(0),
+                            dateLabelArray: new Array(daysCount).fill(''),
+                            backgroundColor: new Array(daysCount).fill('#60a5fa'),
                             borderRadius: 4
                         });
                     }
 
-                    for (let i = 6; i >= 0; i--) {
-                        let baseDate = new Date();
-                        let tzNowStr = baseDate.toLocaleString('en-US', { timeZone: this.currentTimezone });
-                        let tzNow = new Date(tzNowStr);
-                        tzNow.setDate(tzNow.getDate() + this.chartOffsetDays - i);
+                    let maxDailyHoursFound = 12;
 
-                        const pad = (n) => String(n).padStart(2, '0');
-                        let dateStr = `${tzNow.getFullYear()}-${pad(tzNow.getMonth()+1)}-${pad(tzNow.getDate())}`;
-                        
-                        let dayName = tzNow.toLocaleDateString([], { weekday: 'short' });
-                        let dateFormatted = tzNow.toLocaleDateString([], { month: 'short', day: 'numeric' });
-                        let fullLabel = `${dayName}, ${dateFormatted}`;
-                        labels.push(fullLabel);
-
-                        let daySleeps = this.logs.filter(l => l.category === 'sleep' && l.start_time && this.getLocalDateString(l.start_time) === dateStr);
-                        
+                    datesList.forEach((dStr, idx) => {
+                        const segs = dailySegmentsMap[dStr] || [];
                         let daySumMins = 0;
-                        daySleeps.forEach((sleep, sIdx) => {
-                            let totalMins = sleep.duration_minutes || 0;
-                            daySumMins += totalMins;
-                            if (sIdx < maxSessionsPerDay) {
-                                let durationHours = parseFloat((totalMins / 60).toFixed(2));
-                                datasets[sIdx].data[6 - i] = durationHours;
-                                datasets[sIdx].durationMinsArray[6 - i] = totalMins;
-                                datasets[sIdx].dateLabelArray[6 - i] = fullLabel;
 
-                                let hours = totalMins / 60;
-                                let color = '#f472b6'; // Light Pink (< 1h)
-                                if (hours >= 8) color = '#34d399';      // Green (>= 8h)
-                                else if (hours >= 4) color = '#60a5fa'; // Blue (4h to <8h)
-                                else if (hours >= 1) color = '#fbbf24'; // Yellow (1h to <4h)
-
-                                datasets[sIdx].backgroundColor[6 - i] = color;
+                        segs.forEach((seg, sIdx) => {
+                            daySumMins += seg.durationMinutes;
+                            if (sIdx < maxSessionsInWindow) {
+                                let durationHours = parseFloat((seg.durationMinutes / 60).toFixed(2));
+                                datasets[sIdx].data[idx] = durationHours;
+                                datasets[sIdx].durationMinsArray[idx] = seg.durationMinutes;
+                                datasets[sIdx].dateLabelArray[idx] = labels[idx];
+                                datasets[sIdx].backgroundColor[idx] = seg.sourceColor; // Inherits source color
                             }
                         });
-                        dailyTotalMins[6 - i] = daySumMins;
+
+                        dailyTotalMins[idx] = daySumMins;
                         if ((daySumMins / 60) > maxDailyHoursFound) {
                             maxDailyHoursFound = Math.ceil(daySumMins / 60);
                         }
-                    }
+                    });
 
                     const self = this;
 
-                    window.sleepChartInstance = new Chart(ctx, {
+                    window.sleepChartInstance = new Chart(ctx.getContext('2d'), {
                         type: 'bar',
                         data: {
                             labels: labels,
@@ -1140,7 +1236,7 @@
                                             if (!mins) return '';
                                             const h = Math.floor(mins / 60);
                                             const m = mins % 60;
-                                            return ` Session: ${h} hrs ${m} mins`;
+                                            return ` Segment: ${h} hrs ${m} mins`;
                                         }
                                     }
                                 }
@@ -1149,17 +1245,14 @@
                                 x: { stacked: true },
                                 y: {
                                     stacked: true,
-                                    // Solution 2A: Explicit boundaries
                                     min: 0,
                                     max: maxDailyHoursFound,
                                     ticks: {
                                         stepSize: 0.5,
                                         callback: function(value) {
-                                            // Solution 2A & 2B: Only render whole numbers as text labels
                                             return value % 1 === 0 ? value + ' h' : '';
                                         }
                                     },
-                                    // Solution 2B: Forced grid line styling at 0.5h intervals
                                     grid: {
                                         display: true,
                                         color: 'rgba(148, 163, 184, 0.4)',
@@ -1177,7 +1270,9 @@
                 },
 
                 renderMedChart() {
-                    const ctx = document.getElementById('medChart').getContext('2d');
+                    const ctx = document.getElementById('medChart');
+                    if (!ctx) return;
+
                     if (window.medChartInstance) window.medChartInstance.destroy();
 
                     const medCounts = {};
@@ -1189,7 +1284,7 @@
                     const labels = Object.keys(medCounts);
                     const dataValues = Object.values(medCounts);
 
-                    window.medChartInstance = new Chart(ctx, {
+                    window.medChartInstance = new Chart(ctx.getContext('2d'), {
                         type: 'bar',
                         data: {
                             labels: labels.length ? labels : ['No Data'],
