@@ -399,7 +399,8 @@
                                 <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#f472b6] inline-block"></span><span>&lt; 1 hour (Light Pink)</span></div>
                             </div>
 
-                            <div class="relative h-80">
+                            <!-- Solution 1: Explicit min-height container -->
+                            <div class="relative w-full h-80 min-h-[320px]">
                                 <canvas id="sleepChart"></canvas>
                             </div>
                         </div>
@@ -426,7 +427,7 @@
 
                         <div class="bg-white p-5 rounded-2xl shadow-sm border border-emerald-100">
                             <h3 class="font-bold text-slate-800 mb-4">Medication Dose Counts</h3>
-                            <div class="relative h-64">
+                            <div class="relative w-full h-64 min-h-[260px]">
                                 <canvas id="medChart"></canvas>
                             </div>
                         </div>
@@ -602,21 +603,25 @@
                 showEditModal: false,
                 editingLog: {},
 
-                // Display window starts at 7 days (1 week), expands by 7 days each time "Load Previous Week" is clicked
                 sleepChartDaysWindow: 7,
 
                 selectedChartDateInfo: 'None selected',
                 selectedChartTotalSleep: '--',
                 selectedChartLogDuration: '--',
 
+                // Solution 2: Reliable DOM timing with $nextTick and setTimeout
                 switchTab(tabName) {
                     this.activeTab = tabName;
                     this.renderedTabs[tabName] = true;
 
                     if (tabName === 'sleep_stats') {
-                        this.$nextTick(() => this.renderSleepChart());
+                        this.$nextTick(() => {
+                            setTimeout(() => this.renderSleepChart(), 50);
+                        });
                     } else if (tabName === 'med_stats') {
-                        this.$nextTick(() => this.renderMedChart());
+                        this.$nextTick(() => {
+                            setTimeout(() => this.renderMedChart(), 50);
+                        });
                     }
                 },
 
@@ -1054,7 +1059,6 @@
                     });
                 },
 
-                // Midnight Bar Splitting Algorithm (Dynamically loads past weeks based on active window)
                 splitSleepLogsAcrossMidnight() {
                     const splitSegments = [];
                     const maxPreloadDate = new Date();
@@ -1113,7 +1117,11 @@
                     const ctx = document.getElementById('sleepChart');
                     if (!ctx) return;
 
-                    if (window.sleepChartInstance) window.sleepChartInstance.destroy();
+                    // Solution 3: Strict canvas instance cleanup
+                    if (window.sleepChartInstance) {
+                        window.sleepChartInstance.destroy();
+                        window.sleepChartInstance = null;
+                    }
 
                     const splitSegments = this.splitSleepLogsAcrossMidnight();
                     const daysCount = this.sleepChartDaysWindow; 
@@ -1192,6 +1200,9 @@
                         options: { 
                             responsive: true, 
                             maintainAspectRatio: false,
+                            // Solutions 4 & 5: Retina DPR clamping and resize throttling
+                            devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+                            resizeDelay: 100,
                             onHover: (event, activeElements) => {
                                 if (activeElements && activeElements.length > 0) {
                                     const element = activeElements[0];
@@ -1271,7 +1282,10 @@
                     const ctx = document.getElementById('medChart');
                     if (!ctx) return;
 
-                    if (window.medChartInstance) window.medChartInstance.destroy();
+                    if (window.medChartInstance) {
+                        window.medChartInstance.destroy();
+                        window.medChartInstance = null;
+                    }
 
                     const medCounts = {};
                     this.medicineLogs.forEach(m => {
@@ -1296,6 +1310,8 @@
                         options: { 
                             responsive: true, 
                             maintainAspectRatio: false,
+                            devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+                            resizeDelay: 100,
                             scales: {
                                 y: {
                                     beginAtZero: true,
