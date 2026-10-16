@@ -359,15 +359,15 @@
                                 <div>
                                     <h3 class="font-bold text-slate-800">Sleep Duration Trend</h3>
                                     <p class="text-xs text-slate-400">
-                                        Displaying <span class="font-semibold text-indigo-600" x-text="sleepChartDaysWindow + ' Days (' + (sleepChartDaysWindow/7) + ' Week/s) [Pre-loaded 28 days max]'"></span>
+                                        Displaying <span class="font-semibold text-indigo-600" x-text="sleepChartDaysWindow + ' Days (' + (sleepChartDaysWindow/7) + ' Week/s)'"></span>
                                     </p>
                                 </div>
                                 <div class="flex items-center space-x-2">
-                                    <button @click="loadMoreSleepWeek(); renderSleepChart()" :disabled="sleepChartDaysWindow >= 28" :class="sleepChartDaysWindow >= 28 ? 'opacity-40 cursor-not-allowed' : ''" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg font-medium transition flex items-center">
-                                        <i class="fa-solid fa-plus mr-1.5"></i> Load +1 Week More
+                                    <button @click="loadPreviousWeek(); renderSleepChart()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg font-medium transition flex items-center">
+                                        <i class="fa-solid fa-plus mr-1.5"></i> Load Previous Week (+1 Week)
                                     </button>
-                                    <button @click="resetSleepWeek(); renderSleepChart()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-medium transition">
-                                        Reset to 1 Week
+                                    <button @click="resetToCurrentWeek(); renderSleepChart()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-medium transition">
+                                        Reset to Current Week
                                     </button>
                                 </div>
                             </div>
@@ -602,7 +602,7 @@
                 showEditModal: false,
                 editingLog: {},
 
-                // Pre-loaded 4 weeks max in background (28 days), but initial display is 7 days (1 week)
+                // Display window starts at 7 days (1 week), expands by 7 days each time "Load Previous Week" is clicked
                 sleepChartDaysWindow: 7,
 
                 selectedChartDateInfo: 'None selected',
@@ -620,14 +620,11 @@
                     }
                 },
 
-                loadMoreSleepWeek() {
-                    if (this.sleepChartDaysWindow < 28) {
-                        this.sleepChartDaysWindow += 7;
-                        if (this.sleepChartDaysWindow > 28) this.sleepChartDaysWindow = 28;
-                    }
+                loadPreviousWeek() {
+                    this.sleepChartDaysWindow += 7;
                 },
 
-                resetSleepWeek() {
+                resetToCurrentWeek() {
                     this.sleepChartDaysWindow = 7;
                 },
 
@@ -1057,12 +1054,11 @@
                     });
                 },
 
-                // Midnight Bar Splitting Algorithm + Source Bar Color Preservation (Pre-loads 28 days max)
+                // Midnight Bar Splitting Algorithm (Dynamically loads past weeks based on active window)
                 splitSleepLogsAcrossMidnight() {
                     const splitSegments = [];
-                    // Pre-load 28 days (4 weeks) max window
                     const maxPreloadDate = new Date();
-                    maxPreloadDate.setDate(maxPreloadDate.getDate() - 28);
+                    maxPreloadDate.setDate(maxPreloadDate.getDate() - this.sleepChartDaysWindow);
 
                     const sleepLogs = this.logs.filter(l => {
                         if (l.category !== 'sleep' || !l.start_time || !l.end_time) return false;
@@ -1120,7 +1116,7 @@
                     if (window.sleepChartInstance) window.sleepChartInstance.destroy();
 
                     const splitSegments = this.splitSleepLogsAcrossMidnight();
-                    const daysCount = this.sleepChartDaysWindow; // Display window (7 days by default, expandable up to 28)
+                    const daysCount = this.sleepChartDaysWindow; 
                     const labels = [];
                     const dailyTotalMins = new Array(daysCount).fill(0);
 
