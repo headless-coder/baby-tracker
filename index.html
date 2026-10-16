@@ -328,7 +328,7 @@
                     </div>
                 </template>
 
-                <!-- TAB: SLEEP ANALYTICS CHART & AVERAGES (Preloads 14 days max, displays 7 days initially) -->
+                <!-- TAB: SLEEP ANALYTICS CHART & AVERAGES -->
                 <template x-if="renderedTabs['sleep_stats']">
                     <div x-show="activeTab === 'sleep_stats'" class="space-y-6">
                         <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -389,7 +389,7 @@
                     </div>
                 </template>
 
-                <!-- TAB: HISTORICAL SLEEP DATA (Analytics positioned ABOVE historical logs feed) -->
+                <!-- TAB: HISTORICAL SLEEP DATA -->
                 <template x-if="renderedTabs['historical_sleep']">
                     <div x-show="activeTab === 'historical_sleep'" class="space-y-6">
                         
@@ -398,7 +398,7 @@
                             <div class="flex justify-between items-center border-b pb-3">
                                 <div>
                                     <h3 class="font-bold text-slate-800 text-base">Long-Term Sleep Analytics</h3>
-                                    <p class="text-xs text-slate-400">Aggregated historical averages (7-day, 12-month, 5-year views)</p>
+                                    <p class="text-xs text-slate-400">Aggregated historical averages (7-day, 12-month, 5-year views based on daily totals)</p>
                                 </div>
                                 <button @click="fetchHistoricalSleepLogs(); renderHistoricalCharts()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg font-medium transition">
                                     <i class="fa-solid fa-rotate mr-1"></i> Refresh Data
@@ -412,7 +412,7 @@
                             <div class="space-y-6" x-show="!isLoadingHistorical">
                                 <!-- 1. Past 7 Days Historical Chart -->
                                 <div class="space-y-2">
-                                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide">Past 7 Days Sleep Trend</h4>
+                                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide">Past 7 Days Total Sleep Trend</h4>
                                     <div class="relative w-full h-64 min-h-[240px]">
                                         <canvas id="hist7DaysChart"></canvas>
                                     </div>
@@ -420,9 +420,9 @@
 
                                 <hr class="border-amber-100">
 
-                                <!-- 2. Past 12 Months' Averages Chart -->
+                                <!-- 2. Past 12 Months' Averages Chart (Jan average, Feb average, etc.) -->
                                 <div class="space-y-2">
-                                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide">Past 12 Months' Monthly Averages (Jan, Feb, etc.)</h4>
+                                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide">Past 12 Months' Daily Average (Jan, Feb, etc.)</h4>
                                     <div class="relative w-full h-64 min-h-[240px]">
                                         <canvas id="hist12MonthsChart"></canvas>
                                     </div>
@@ -432,7 +432,7 @@
 
                                 <!-- 3. Past 5 Years' Averages Chart -->
                                 <div class="space-y-2">
-                                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide">Past 5 Years' Yearly Averages</h4>
+                                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide">Past 5 Years' Daily Average</h4>
                                     <div class="relative w-full h-64 min-h-[240px]">
                                         <canvas id="hist5YearsChart"></canvas>
                                     </div>
@@ -440,7 +440,7 @@
                             </div>
                         </div>
 
-                        <!-- HISTORICAL LOGS FEED LIST (Positioned BELOW analytics charts) -->
+                        <!-- HISTORICAL LOGS FEED LIST -->
                         <div class="bg-white p-5 rounded-2xl shadow-sm border border-amber-100 space-y-4">
                             <div class="flex justify-between items-center">
                                 <h3 class="font-bold text-slate-800 text-base">Historical Sleep Logs Feed</h3>
@@ -780,7 +780,6 @@
                     this.logs = data || [];
                 },
 
-                // Lazy load all sleep logs for historical analytics when Historical Sleep tab is opened
                 async fetchHistoricalSleepLogs() {
                     this.isLoadingHistorical = true;
 
@@ -932,15 +931,38 @@
                     });
                 },
 
-                // RENDER HISTORICAL SLEEP ANALYTICS CHARTS (7 Days, 12 Months Averages, 5 Years Averages)
+                // RENDER HISTORICAL CHARTS USING TRUE DAILY TOTAL SLEEP DURATION AVERAGES
                 renderHistoricalCharts() {
                     const allLogs = [...this.logs, ...this.allSleepLogsCache];
+                    
+                    // Helper to build a map of dateStr -> total sleep minutes for that day
+                    const dailyTotalsMap = {};
+                    allLogs.forEach(l => {
+                        if (l.category === 'sleep' && l.start_time && l.end_time && l.duration_minutes > 0) {
+                            // Split multi-day across midnight and sum per calendar date
+                            let currStart = new Date(l.start_time);
+                            const end = new Date(l.end_time);
+                            while (currStart < end) {
+                                const tzStart = new Date(currStart.toLocaleString('en-US', { timeZone: this.currentTimezone }));
+                                const nextMidnight = new Date(tzStart);
+                                nextMidnight.setHours(24, 0, 0, 0);
 
-                    // 1. Past 7 Days Chart
+                                let segEnd = new Date(currStart.getTime() + (nextMidnight - tzStart));
+                                if (segEnd > end) segEnd = end;
+
+                                const segMins = Math.max(1, Math.round((segEnd - currStart) / 60000));
+                                const dateStr = this.getLocalDateString(currStart.toISOString());
+                                
+                                dailyTotalsMap[dateStr] = (dailyTotalsMap[dateStr] || 0) + segMins;
+                                currStart = segEnd;
+                            }
+                        }
+                    });
+
+                    // 1. Past 7 Days Chart (using daily total sleep duration)
                     const ctx7 = document.getElementById('hist7DaysChart');
                     if (ctx7) {
                         if (window.hist7DaysInstance) window.hist7DaysInstance.destroy();
-                        const split7 = this.splitSleepLogsAcrossMidnight(allLogs, 7);
                         const labels7 = [], data7 = [];
                         for (let i = 6; i >= 0; i--) {
                             let tzNow = new Date(new Date().toLocaleString('en-US', { timeZone: this.currentTimezone }));
@@ -948,67 +970,63 @@
                             const pad = (n) => String(n).padStart(2, '0');
                             let dateStr = `${tzNow.getFullYear()}-${pad(tzNow.getMonth()+1)}-${pad(tzNow.getDate())}`;
                             labels7.push(tzNow.toLocaleDateString([], { month: 'short', day: 'numeric' }));
-                            let dayMins = split7.filter(s => s.dateStr === dateStr).reduce((sum, s) => sum + s.durationMinutes, 0);
+                            let dayMins = dailyTotalsMap[dateStr] || 0;
                             data7.push(parseFloat((dayMins / 60).toFixed(2)));
                         }
                         window.hist7DaysInstance = new Chart(ctx7.getContext('2d'), {
                             type: 'bar',
-                            data: { labels: labels7, datasets: [{ label: 'Hours', data: data7, backgroundColor: '#60a5fa', borderRadius: 6 }] },
+                            data: { labels: labels7, datasets: [{ label: 'Total Hours', data: data7, backgroundColor: '#60a5fa', borderRadius: 6 }] },
                             options: { responsive: true, maintainAspectRatio: false, devicePixelRatio: 1.5, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
                         });
                     }
 
-                    // 2. Past 12 Months' Averages Chart (Jan average, Feb average, etc.)
+                    // 2. Past 12 Months' Averages Chart (Average of daily totals per month, e.g. Jan avg, Feb avg)
                     const ctx12M = document.getElementById('hist12MonthsChart');
                     if (ctx12M) {
                         if (window.hist12MInstance) window.hist12MInstance.destroy();
                         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                        const monthTotals = new Array(12).fill(0);
-                        const monthCounts = new Array(12).fill(0);
+                        const monthSumMins = new Array(12).fill(0);
+                        const monthDaysCount = new Array(12).fill(0);
 
-                        allLogs.forEach(l => {
-                            if (l.category === 'sleep' && l.start_time && l.duration_minutes > 0) {
-                                const d = new Date(l.start_time);
-                                const m = d.getMonth();
-                                monthTotals[m] += l.duration_minutes;
-                                monthCounts[m]++;
-                            }
+                        Object.keys(dailyTotalsMap).forEach(dateStr => {
+                            const [y, m, d] = dateStr.split('-').map(Number);
+                            const monthIdx = m - 1;
+                            monthSumMins[monthIdx] += dailyTotalsMap[dateStr];
+                            monthDaysCount[monthIdx]++;
                         });
 
-                        const data12M = monthTotals.map((tot, idx) => monthCounts[idx] > 0 ? parseFloat((tot / monthCounts[idx] / 60).toFixed(2)) : 0);
+                        const data12M = monthSumMins.map((sumMins, idx) => monthDaysCount[idx] > 0 ? parseFloat((sumMins / monthDaysCount[idx] / 60).toFixed(2)) : 0);
 
                         window.hist12MInstance = new Chart(ctx12M.getContext('2d'), {
                             type: 'line',
-                            data: { labels: monthNames, datasets: [{ label: 'Avg Hours', data: data12M, borderColor: '#34d399', backgroundColor: 'rgba(52, 211, 153, 0.1)', fill: true, tension: 0.3 }] },
+                            data: { labels: monthNames, datasets: [{ label: 'Avg Daily Hours', data: data12M, borderColor: '#34d399', backgroundColor: 'rgba(52, 211, 153, 0.1)', fill: true, tension: 0.3 }] },
                             options: { responsive: true, maintainAspectRatio: false, devicePixelRatio: 1.5, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
                         });
                     }
 
-                    // 3. Past 5 Years' Averages Chart (2022, 2023, 2024, 2025, 2026 averages)
+                    // 3. Past 5 Years' Averages Chart (Average of daily totals per year)
                     const ctx5Y = document.getElementById('hist5YearsChart');
                     if (ctx5Y) {
                         if (window.hist5YInstance) window.hist5YInstance.destroy();
                         const currentYear = new Date().getFullYear();
                         const years = [currentYear - 4, currentYear - 3, currentYear - 2, currentYear - 1, currentYear];
-                        const yearTotals = {};
-                        const yearCounts = {};
-                        years.forEach(y => { yearTotals[y] = 0; yearCounts[y] = 0; });
+                        const yearSumMins = {};
+                        const yearDaysCount = {};
+                        years.forEach(y => { yearSumMins[y] = 0; yearDaysCount[y] = 0; });
 
-                        allLogs.forEach(l => {
-                            if (l.category === 'sleep' && l.start_time && l.duration_minutes > 0) {
-                                const y = new Date(l.start_time).getFullYear();
-                                if (yearTotals[y] !== undefined) {
-                                    yearTotals[y] += l.duration_minutes;
-                                    yearCounts[y]++;
-                                }
+                        Object.keys(dailyTotalsMap).forEach(dateStr => {
+                            const y = parseInt(dateStr.split('-')[0], 10);
+                            if (yearSumMins[y] !== undefined) {
+                                yearSumMins[y] += dailyTotalsMap[dateStr];
+                                yearDaysCount[y]++;
                             }
                         });
 
-                        const data5Y = years.map(y => yearCounts[y] > 0 ? parseFloat((yearTotals[y] / yearCounts[y] / 60).toFixed(2)) : 0);
+                        const data5Y = years.map(y => yearDaysCount[y] > 0 ? parseFloat((yearSumMins[y] / yearDaysCount[y] / 60).toFixed(2)) : 0);
 
                         window.hist5YInstance = new Chart(ctx5Y.getContext('2d'), {
                             type: 'bar',
-                            data: { labels: years.map(String), datasets: [{ label: 'Avg Hours', data: data5Y, backgroundColor: '#818cf8', borderRadius: 6 }] },
+                            data: { labels: years.map(String), datasets: [{ label: 'Avg Daily Hours', data: data5Y, backgroundColor: '#818cf8', borderRadius: 6 }] },
                             options: { responsive: true, maintainAspectRatio: false, devicePixelRatio: 1.5, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
                         });
                     }
