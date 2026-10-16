@@ -393,60 +393,42 @@
                 <template x-if="renderedTabs['historical_sleep']">
                     <div x-show="activeTab === 'historical_sleep'" class="space-y-6">
                         
-                        <!-- HISTORICAL SLEEP ANALYTICS CHARTS CARD -->
-                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-amber-100 space-y-6">
-                            <div class="flex justify-between items-center border-b pb-3">
+                        <!-- HISTORICAL SLEEP ANALYTICS CLONE CHART -->
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-amber-100 space-y-4">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-3">
                                 <div>
-                                    <h3 class="font-bold text-slate-800 text-base">Long-Term Sleep Analytics</h3>
-                                    <p class="text-xs text-slate-400">Accurate daily total sleep duration averages across 7 days, 30 days, 12 months, and 5 years</p>
+                                    <h3 class="font-bold text-slate-800 text-base">All-Time Historical Sleep Trend</h3>
+                                    <p class="text-xs text-slate-400">
+                                        Displaying <span class="font-semibold text-indigo-600" x-text="historicalChartDaysWindow + ' Days'"></span>
+                                    </p>
                                 </div>
-                                <button @click="fetchHistoricalSleepLogs(); renderHistoricalCharts()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg font-medium transition">
-                                    <i class="fa-solid fa-rotate mr-1"></i> Refresh Data
-                                </button>
+                                <div class="flex items-center space-x-2 flex-wrap gap-y-2">
+                                    <button @click="loadMoreHistoricalDays(30); renderHistoricalChart()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg font-medium transition flex items-center">
+                                        <i class="fa-solid fa-plus mr-1"></i> +30 Days
+                                    </button>
+                                    <button @click="loadAllHistoricalData(); renderHistoricalChart()" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-medium transition flex items-center">
+                                        <i class="fa-solid fa-database mr-1"></i> Load All History
+                                    </button>
+                                    <button @click="resetHistoricalChartWindow(); renderHistoricalChart()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-medium transition">
+                                        Reset (30d)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Custom Legend -->
+                            <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-600 pt-1 border-t border-slate-100">
+                                <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#34d399] inline-block"></span><span>&ge; 8 hours total session (Green)</span></div>
+                                <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#60a5fa] inline-block"></span><span>4 to 8 hours (Blue)</span></div>
+                                <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#fbbf24] inline-block"></span><span>1 to 4 hours (Yellow)</span></div>
+                                <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#f472b6] inline-block"></span><span>&lt; 1 hour (Light Pink)</span></div>
                             </div>
 
                             <template x-if="isLoadingHistorical">
-                                <p class="text-xs text-slate-400 text-center py-8">Loading historical sleep data from database...</p>
+                                <p class="text-xs text-slate-400 text-center py-8">Loading all historical sleep data from database...</p>
                             </template>
 
-                            <div class="space-y-6" x-show="!isLoadingHistorical">
-                                <!-- 1. Past 7 Days Historical Chart -->
-                                <div class="space-y-2">
-                                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide">Past 7 Days Daily Total Sleep</h4>
-                                    <div class="relative w-full h-64 min-h-[240px]">
-                                        <canvas id="hist7DaysChart"></canvas>
-                                    </div>
-                                </div>
-
-                                <hr class="border-amber-100">
-
-                                <!-- 2. Past 30 Days Historical Chart -->
-                                <div class="space-y-2">
-                                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide">Past 30 Days Daily Total Sleep</h4>
-                                    <div class="relative w-full h-64 min-h-[240px]">
-                                        <canvas id="hist30DaysChart"></canvas>
-                                    </div>
-                                </div>
-
-                                <hr class="border-amber-100">
-
-                                <!-- 3. Past 12 Months' Averages Chart -->
-                                <div class="space-y-2">
-                                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide">Past 12 Months' Daily Average (Jan, Feb, etc.)</h4>
-                                    <div class="relative w-full h-64 min-h-[240px]">
-                                        <canvas id="hist12MonthsChart"></canvas>
-                                    </div>
-                                </div>
-
-                                <hr class="border-amber-100">
-
-                                <!-- 4. Past 5 Years' Averages Chart -->
-                                <div class="space-y-2">
-                                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide">Past 5 Years' Daily Average</h4>
-                                    <div class="relative w-full h-64 min-h-[240px]">
-                                        <canvas id="hist5YearsChart"></canvas>
-                                    </div>
-                                </div>
+                            <div class="relative w-full h-80 min-h-[320px]" x-show="!isLoadingHistorical">
+                                <canvas id="historicalSleepChart"></canvas>
                             </div>
                         </div>
 
@@ -630,6 +612,7 @@
                 editingLog: {},
 
                 sleepChartDaysWindow: 7,
+                historicalChartDaysWindow: 30,
 
                 switchTab(tabName) {
                     this.activeTab = tabName;
@@ -642,7 +625,7 @@
                     } else if (tabName === 'historical_sleep') {
                         this.fetchHistoricalSleepLogs().then(() => {
                             this.$nextTick(() => {
-                                setTimeout(() => this.renderHistoricalCharts(), 50);
+                                setTimeout(() => this.renderHistoricalChart(), 50);
                             });
                         });
                     } else if (tabName === 'med_stats') {
@@ -663,10 +646,32 @@
                     this.sleepChartDaysWindow = 7;
                 },
 
+                loadMoreHistoricalDays(days) {
+                    this.historicalChartDaysWindow += days;
+                },
+
+                loadAllHistoricalData() {
+                    const allLogs = [...this.logs, ...this.allSleepLogsCache];
+                    const sleepLogs = allLogs.filter(l => l.category === 'sleep' && l.start_time);
+                    if (sleepLogs.length > 0) {
+                        const oldestDate = new Date(Math.min(...sleepLogs.map(l => new Date(l.start_time))));
+                        const now = new Date();
+                        const diffTime = Math.abs(now - oldestDate);
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        this.historicalChartDaysWindow = Math.max(30, diffDays + 5);
+                    } else {
+                        this.historicalChartDaysWindow = 365;
+                    }
+                },
+
+                resetHistoricalChartWindow() {
+                    this.historicalChartDaysWindow = 30;
+                },
+
                 saveTimezonePreference() {
                     localStorage.setItem('baby_tz', this.currentTimezone);
                     if (this.renderedTabs['sleep_stats']) this.renderSleepChart();
-                    if (this.renderedTabs['historical_sleep']) this.renderHistoricalCharts();
+                    if (this.renderedTabs['historical_sleep']) this.renderHistoricalChart();
                 },
 
                 toggleCurrentTime(event) {
@@ -857,38 +862,6 @@
                     return splitSegments;
                 },
 
-                // General helper to build daily totals map across any logs array using the split logic base
-                buildDailyTotalsMap(logsToSplit) {
-                    const splitSegments = [];
-                    const sleepLogs = logsToSplit.filter(l => l.category === 'sleep' && l.start_time && l.end_time && l.duration_minutes > 0);
-
-                    sleepLogs.forEach(log => {
-                        let currStart = new Date(log.start_time);
-                        const end = new Date(log.end_time);
-
-                        while (currStart < end) {
-                            const tzStart = new Date(currStart.toLocaleString('en-US', { timeZone: this.currentTimezone }));
-                            const nextMidnight = new Date(tzStart);
-                            nextMidnight.setHours(24, 0, 0, 0);
-
-                            let segEnd = new Date(currStart.getTime() + (nextMidnight - tzStart));
-                            if (segEnd > end) segEnd = end;
-
-                            splitSegments.push({
-                                dateStr: this.getLocalDateString(currStart.toISOString()),
-                                durationMinutes: Math.max(1, Math.round((segEnd - currStart) / 60000))
-                            });
-                            currStart = segEnd;
-                        }
-                    });
-
-                    const dailyMap = {};
-                    splitSegments.forEach(seg => {
-                        dailyMap[seg.dateStr] = (dailyMap[seg.dateStr] || 0) + seg.durationMinutes;
-                    });
-                    return dailyMap;
-                },
-
                 renderSleepChart() {
                     const ctx = document.getElementById('sleepChart');
                     if (!ctx) return;
@@ -973,103 +946,90 @@
                     });
                 },
 
-                // RENDER HISTORICAL CHARTS USING THE SPLIT LOGIC BASE FOR TRUE DAILY TOTAL SLEEP AVERAGES
-                renderHistoricalCharts() {
-                    const allLogs = [...this.logs, ...this.allSleepLogsCache];
-                    const dailyTotalsMap = this.buildDailyTotalsMap(allLogs);
+                // RENDER HISTORICAL CLONE CHART WITH SHIFTING SUPPORT FOR ALL DATA
+                renderHistoricalChart() {
+                    const ctx = document.getElementById('historicalSleepChart');
+                    if (!ctx) return;
 
-                    // 1. Past 7 Days Historical Chart
-                    const ctx7 = document.getElementById('hist7DaysChart');
-                    if (ctx7) {
-                        if (window.hist7DaysInstance) window.hist7DaysInstance.destroy();
-                        const labels7 = [], data7 = [];
-                        for (let i = 6; i >= 0; i--) {
-                            let tzNow = new Date(new Date().toLocaleString('en-US', { timeZone: this.currentTimezone }));
-                            tzNow.setDate(tzNow.getDate() - i);
-                            const pad = (n) => String(n).padStart(2, '0');
-                            let dateStr = `${tzNow.getFullYear()}-${pad(tzNow.getMonth()+1)}-${pad(tzNow.getDate())}`;
-                            labels7.push(tzNow.toLocaleDateString([], { month: 'short', day: 'numeric' }));
-                            let dayMins = dailyTotalsMap[dateStr] || 0;
-                            data7.push(parseFloat((dayMins / 60).toFixed(2)));
-                        }
-                        window.hist7DaysInstance = new Chart(ctx7.getContext('2d'), {
-                            type: 'bar',
-                            data: { labels: labels7, datasets: [{ label: 'Total Hours', data: data7, backgroundColor: '#60a5fa', borderRadius: 6 }] },
-                            options: { responsive: true, maintainAspectRatio: false, devicePixelRatio: 1.5, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                    if (window.historicalChartInstance) {
+                        window.historicalChartInstance.destroy();
+                        window.historicalChartInstance = null;
+                    }
+
+                    const allCombinedLogs = [...this.logs, ...this.allSleepLogsCache];
+                    const splitSegments = this.splitSleepLogsAcrossMidnight(allCombinedLogs, this.historicalChartDaysWindow);
+                    const daysCount = this.historicalChartDaysWindow;
+                    const labels = [], dailyTotalMins = new Array(daysCount).fill(0);
+                    const dailySegmentsMap = {}, datesList = [];
+
+                    for (let i = daysCount - 1; i >= 0; i--) {
+                        let tzNow = new Date(new Date().toLocaleString('en-US', { timeZone: this.currentTimezone }));
+                        tzNow.setDate(tzNow.getDate() - i);
+                        const pad = (n) => String(n).padStart(2, '0');
+                        let dateStr = `${tzNow.getFullYear()}-${pad(tzNow.getMonth()+1)}-${pad(tzNow.getDate())}`;
+                        datesList.push(dateStr);
+                        labels.push(`${tzNow.toLocaleDateString([], { weekday: 'short' })}, ${tzNow.toLocaleDateString([], { month: 'short', day: 'numeric', year: '2-digit' })}`);
+                        dailySegmentsMap[dateStr] = splitSegments.filter(s => s.dateStr === dateStr);
+                    }
+
+                    let maxSessions = 1;
+                    datesList.forEach(d => { if ((dailySegmentsMap[d] || []).length > maxSessions) maxSessions = dailySegmentsMap[d].length; });
+
+                    const datasets = [];
+                    for (let s = 0; s < maxSessions; s++) {
+                        datasets.push({
+                            data: new Array(daysCount).fill(0),
+                            durationMinsArray: new Array(daysCount).fill(0),
+                            backgroundColor: new Array(daysCount).fill('#60a5fa'),
+                            borderRadius: 4
                         });
                     }
 
-                    // 2. Past 30 Days Historical Chart
-                    const ctx30 = document.getElementById('hist30DaysChart');
-                    if (ctx30) {
-                        if (window.hist30DaysInstance) window.hist30DaysInstance.destroy();
-                        const labels30 = [], data30 = [];
-                        for (let i = 29; i >= 0; i--) {
-                            let tzNow = new Date(new Date().toLocaleString('en-US', { timeZone: this.currentTimezone }));
-                            tzNow.setDate(tzNow.getDate() - i);
-                            const pad = (n) => String(n).padStart(2, '0');
-                            let dateStr = `${tzNow.getFullYear()}-${pad(tzNow.getMonth()+1)}-${pad(tzNow.getDate())}`;
-                            labels30.push(tzNow.toLocaleDateString([], { month: 'short', day: 'numeric' }));
-                            let dayMins = dailyTotalsMap[dateStr] || 0;
-                            data30.push(parseFloat((dayMins / 60).toFixed(2)));
-                        }
-                        window.hist30DaysInstance = new Chart(ctx30.getContext('2d'), {
-                            type: 'bar',
-                            data: { labels: labels30, datasets: [{ label: 'Total Hours', data: data30, backgroundColor: '#818cf8', borderRadius: 4 }] },
-                            options: { responsive: true, maintainAspectRatio: false, devicePixelRatio: 1.5, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-                        });
-                    }
-
-                    // 3. Past 12 Months' Averages Chart (Averaging daily totals per month)
-                    const ctx12M = document.getElementById('hist12MonthsChart');
-                    if (ctx12M) {
-                        if (window.hist12MInstance) window.hist12MInstance.destroy();
-                        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                        const monthSumMins = new Array(12).fill(0);
-                        const monthDaysCount = new Array(12).fill(0);
-
-                        Object.keys(dailyTotalsMap).forEach(dateStr => {
-                            const [y, m, d] = dateStr.split('-').map(Number);
-                            const monthIdx = m - 1;
-                            monthSumMins[monthIdx] += dailyTotalsMap[dateStr];
-                            monthDaysCount[monthIdx]++;
-                        });
-
-                        const data12M = monthSumMins.map((sumMins, idx) => monthDaysCount[idx] > 0 ? parseFloat((sumMins / monthDaysCount[idx] / 60).toFixed(2)) : 0);
-
-                        window.hist12MInstance = new Chart(ctx12M.getContext('2d'), {
-                            type: 'line',
-                            data: { labels: monthNames, datasets: [{ label: 'Avg Daily Hours', data: data12M, borderColor: '#34d399', backgroundColor: 'rgba(52, 211, 153, 0.1)', fill: true, tension: 0.3 }] },
-                            options: { responsive: true, maintainAspectRatio: false, devicePixelRatio: 1.5, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-                        });
-                    }
-
-                    // 4. Past 5 Years' Averages Chart (Averaging daily totals per year)
-                    const ctx5Y = document.getElementById('hist5YearsChart');
-                    if (ctx5Y) {
-                        if (window.hist5YInstance) window.hist5YInstance.destroy();
-                        const currentYear = new Date().getFullYear();
-                        const years = [currentYear - 4, currentYear - 3, currentYear - 2, currentYear - 1, currentYear];
-                        const yearSumMins = {};
-                        const yearDaysCount = {};
-                        years.forEach(y => { yearSumMins[y] = 0; yearDaysCount[y] = 0; });
-
-                        Object.keys(dailyTotalsMap).forEach(dateStr => {
-                            const y = parseInt(dateStr.split('-')[0], 10);
-                            if (yearSumMins[y] !== undefined) {
-                                yearSumMins[y] += dailyTotalsMap[dateStr];
-                                yearDaysCount[y]++;
+                    let maxHours = 12;
+                    datesList.forEach((dStr, idx) => {
+                        const segs = dailySegmentsMap[dStr] || [];
+                        let daySum = 0;
+                        segs.forEach((seg, sIdx) => {
+                            daySum += seg.durationMinutes;
+                            if (sIdx < maxSessions) {
+                                datasets[sIdx].data[idx] = parseFloat((seg.durationMinutes / 60).toFixed(2));
+                                datasets[sIdx].durationMinsArray[idx] = seg.durationMinutes;
+                                datasets[sIdx].backgroundColor[idx] = seg.sourceColor;
                             }
                         });
+                        dailyTotalMins[idx] = daySum;
+                        if ((daySum / 60) > maxHours) maxHours = Math.ceil(daySum / 60);
+                    });
 
-                        const data5Y = years.map(y => yearDaysCount[y] > 0 ? parseFloat((yearSumMins[y] / yearDaysCount[y] / 60).toFixed(2)) : 0);
-
-                        window.hist5YInstance = new Chart(ctx5Y.getContext('2d'), {
-                            type: 'bar',
-                            data: { labels: years.map(String), datasets: [{ label: 'Avg Daily Hours', data: data5Y, backgroundColor: '#f472b6', borderRadius: 6 }] },
-                            options: { responsive: true, maintainAspectRatio: false, devicePixelRatio: 1.5, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-                        });
-                    }
+                    window.historicalChartInstance = new Chart(ctx.getContext('2d'), {
+                        type: 'bar',
+                        data: { labels, datasets: datasets.filter(ds => ds.data.some(v => v > 0)) },
+                        options: { 
+                            responsive: true, 
+                            maintainAspectRatio: false,
+                            devicePixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
+                            resizeDelay: 150,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        title: (items) => {
+                                            const total = dailyTotalMins[items[0].dataIndex];
+                                            return `${items[0].label} (Total: ${Math.floor(total/60)} hrs ${total%60} mins)`;
+                                        },
+                                        label: (context) => {
+                                            const mins = context.dataset.durationMinsArray[context.dataIndex];
+                                            return mins ? ` Segment: ${Math.floor(mins/60)} hrs ${mins%60} mins` : '';
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: { stacked: true },
+                                y: { stacked: true, min: 0, max: maxHours, ticks: { stepSize: 1 } }
+                            }
+                        }
+                    });
                 },
 
                 renderMedChart() {
