@@ -183,7 +183,7 @@
                                         <div class="flex justify-between items-center mb-1">
                                             <label class="text-[10px] uppercase font-semibold text-slate-400">Start Date & Time (<span x-text="currentTimezone"></span>)</label>
                                             <div class="flex items-center space-x-1">
-                                                <input type="checkbox" id="useCurrentStart" @change="toggleCurrentTime($event)" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                                <input type="checkbox" id="useCurrentStart" @change="toggleCurrentTime($event, 'start')" class="rounded text-indigo-600 focus:ring-indigo-500">
                                                 <label for="useCurrentStart" class="text-[11px] text-indigo-600 font-medium cursor-pointer">Use Current Time</label>
                                             </div>
                                         </div>
@@ -194,7 +194,13 @@
                                         <label for="isRunningEnd" class="text-xs text-indigo-700 font-medium cursor-pointer">Currently Running (End Later)</label>
                                     </div>
                                     <div x-show="!manualSleepIsRunning">
-                                        <label class="text-[10px] uppercase font-semibold text-slate-400">End Date & Time (<span x-text="currentTimezone"></span>)</label>
+                                        <div class="flex justify-between items-center mb-1">
+                                            <label class="text-[10px] uppercase font-semibold text-slate-400">End Date & Time (<span x-text="currentTimezone"></span>)</label>
+                                            <div class="flex items-center space-x-1">
+                                                <input type="checkbox" id="useCurrentEnd" @change="toggleCurrentTime($event, 'end')" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                                <label for="useCurrentEnd" class="text-[11px] text-indigo-600 font-medium cursor-pointer">Use Current Time</label>
+                                            </div>
+                                        </div>
                                         <input type="datetime-local" x-model="manualSleepEnd" class="w-full text-xs px-2 py-1.5 border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500">
                                     </div>
                                 </div>
@@ -626,7 +632,13 @@
                     </div>
                     <template x-if="editingLog.category === 'sleep'">
                         <div>
-                            <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">End Date & Time</label>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-[10px] uppercase font-semibold text-slate-400">End Date & Time</label>
+                                <div class="flex items-center space-x-1">
+                                    <input type="checkbox" id="editUseCurrentEnd" @change="toggleEditCurrentEnd($event)" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                    <label for="editUseCurrentEnd" class="text-[11px] text-indigo-600 font-medium cursor-pointer">Use Current Time</label>
+                                </div>
+                            </div>
                             <input type="datetime-local" x-model="editingLog.formatted_end" class="w-full text-xs px-3 py-2 border rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500">
                         </div>
                     </template>
@@ -761,18 +773,38 @@
                     if (this.renderedTabs['historical_sleep']) this.renderHistoricalChart();
                 },
 
-                toggleCurrentTime(event) {
+                toggleCurrentTime(event, field) {
                     if (event.target.checked) {
                         try {
                             const now = new Date();
                             const tzDate = new Date(now.toLocaleString('en-US', { timeZone: this.currentTimezone }));
                             const pad = (n) => String(n).padStart(2, '0');
-                            this.manualSleepStart = `${tzDate.getFullYear()}-${pad(tzDate.getMonth()+1)}-${pad(tzDate.getDate())}T${pad(tzDate.getHours())}:${pad(tzDate.getMinutes())}`;
+                            const formatted = `${tzDate.getFullYear()}-${pad(tzDate.getMonth()+1)}-${pad(tzDate.getDate())}T${pad(tzDate.getHours())}:${pad(tzDate.getMinutes())}`;
+                            if (field === 'start') this.manualSleepStart = formatted;
+                            if (field === 'end') this.manualSleepEnd = formatted;
                         } catch (e) {
-                            this.manualSleepStart = new Date().toISOString().slice(0, 16);
+                            const fallback = new Date().toISOString().slice(0, 16);
+                            if (field === 'start') this.manualSleepStart = fallback;
+                            if (field === 'end') this.manualSleepEnd = fallback;
                         }
                     } else {
-                        this.manualSleepStart = '';
+                        if (field === 'start') this.manualSleepStart = '';
+                        if (field === 'end') this.manualSleepEnd = '';
+                    }
+                },
+
+                toggleEditCurrentEnd(event) {
+                    if (event.target.checked) {
+                        try {
+                            const now = new Date();
+                            const tzDate = new Date(now.toLocaleString('en-US', { timeZone: this.currentTimezone }));
+                            const pad = (n) => String(n).padStart(2, '0');
+                            this.editingLog.formatted_end = `${tzDate.getFullYear()}-${pad(tzDate.getMonth()+1)}-${pad(tzDate.getDate())}T${pad(tzDate.getHours())}:${pad(tzDate.getMinutes())}`;
+                        } catch (e) {
+                            this.editingLog.formatted_end = new Date().toISOString().slice(0, 16);
+                        }
+                    } else {
+                        this.editingLog.formatted_end = '';
                     }
                 },
 
@@ -811,6 +843,19 @@
                         return `${tzDate.getFullYear()}-${pad(tzDate.getMonth()+1)}-${pad(tzDate.getDate())}`;
                     } catch (e) {
                         return utcDateStr ? utcDateStr.slice(0, 10) : '';
+                    }
+                },
+
+                // Helper to format ISO UTC string to local datetime-local input string without shift
+                formatISOForDatetimeLocal(utcDateStr) {
+                    if (!utcDateStr) return '';
+                    try {
+                        const d = new Date(utcDateStr);
+                        const tzDate = new Date(d.toLocaleString('en-US', { timeZone: this.currentTimezone }));
+                        const pad = (n) => String(n).padStart(2, '0');
+                        return `${tzDate.getFullYear()}-${pad(tzDate.getMonth()+1)}-${pad(tzDate.getDate())}T${pad(tzDate.getHours())}:${pad(tzDate.getMinutes())}`;
+                    } catch (e) {
+                        return utcDateStr.slice(0, 16);
                     }
                 },
 
@@ -1023,8 +1068,8 @@
 
                 openEditModal(log) {
                     this.editingLog = { ...log };
-                    if (log.start_time) this.editingLog.formatted_start = new Date(log.start_time).toISOString().slice(0, 16);
-                    if (log.end_time) this.editingLog.formatted_end = new Date(log.end_time).toISOString().slice(0, 16);
+                    if (log.start_time) this.editingLog.formatted_start = this.formatISOForDatetimeLocal(log.start_time);
+                    if (log.end_time) this.editingLog.formatted_end = this.formatISOForDatetimeLocal(log.end_time);
                     this.showEditModal = true;
                 },
 
