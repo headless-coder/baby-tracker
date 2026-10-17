@@ -22,7 +22,7 @@
 <body class="bg-amber-50/50 text-slate-800 font-sans antialiased min-h-screen flex flex-col" x-data="babyApp()">
 
     <!-- Header / Navbar -->
-    <header class="bg-white border-b border-amber-100 shadow-sm sticky top-0 z-50">
+    <header class="bg-white border-b border-amber-100 shadow-sm sticky top-0 z-40">
         <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-3">
                 <div class="bg-indigo-100 text-indigo-600 p-2 rounded-xl">
@@ -43,7 +43,7 @@
     </header>
 
     <!-- Main Content Container -->
-    <main class="max-w-6xl mx-auto px-4 py-6 flex-1 w-full">
+    <main class="max-w-6xl mx-auto px-4 py-6 flex-1 w-full relative">
 
         <!-- AUTH SCREEN -->
         <template x-if="!user">
@@ -73,25 +73,25 @@
         <!-- APP DASHBOARD -->
         <template x-if="user">
             <div>
-                <!-- STREAMLINED COLOR-CODED SEGMENTED CONTROL BAR -->
-                <div class="mb-6 flex justify-start sm:justify-center overflow-x-auto pb-2">
-                    <nav class="inline-flex bg-slate-200/80 p-1.5 rounded-2xl gap-1.5 shadow-inner">
+                <!-- STREAMLINED COLOR-CODED SEGMENTED CONTROL BAR WITH HIGH Z-INDEX DROPDOWNS -->
+                <div class="mb-6 flex justify-start sm:justify-center overflow-visible pb-2 relative z-50">
+                    <nav class="inline-flex bg-slate-200/90 p-1.5 rounded-2xl gap-1.5 shadow-inner relative">
                         
                         <!-- ALL LOGS GROUP -->
                         <div class="relative" @click.outside="if (openNavMenu === 'all_group') openNavMenu = null">
                             <button @click="openNavMenu = openNavMenu === 'all_group' ? null : 'all_group'"
                                 :class="['all', 'search'].includes(activeTab) ? 'bg-white text-slate-800 shadow-sm' : 'bg-slate-100 hover:bg-slate-50 text-slate-700'"
-                                class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 border-b-2 border-slate-400">
+                                class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 border-b-2 border-slate-400">
                                 <i class="fa-solid fa-list text-slate-500"></i>
                                 <span>All Logs</span>
                                 <i class="fa-solid fa-chevron-down text-[10px] ml-0.5"></i>
                             </button>
-                            <div x-show="openNavMenu === 'all_group'" x-cloak class="absolute left-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-slate-100 py-1.5 z-50">
-                                <button @click="switchTab('all'); openNavMenu = null" class="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center">
-                                    <i class="fa-solid fa-list mr-2 text-slate-500"></i> All Logs
+                            <div x-show="openNavMenu === 'all_group'" x-cloak class="absolute left-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 z-50">
+                                <button @click="switchTab('all'); openNavMenu = null" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center transition">
+                                    <i class="fa-solid fa-list mr-2.5 text-slate-500 w-4"></i> All Logs
                                 </button>
-                                <button @click="switchTab('search'); openNavMenu = null" class="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center">
-                                    <i class="fa-solid fa-magnifying-glass mr-2 text-slate-500"></i> Log Search & History
+                                <button @click="switchTab('search'); openNavMenu = null" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center transition">
+                                    <i class="fa-solid fa-magnifying-glass mr-2.5 text-slate-500 w-4"></i> Log Search & History
                                 </button>
                             </div>
                         </div>
@@ -100,20 +100,20 @@
                         <div class="relative" @click.outside="if (openNavMenu === 'sleep_group') openNavMenu = null">
                             <button @click="openNavMenu = openNavMenu === 'sleep_group' ? null : 'sleep_group'"
                                 :class="['sleep', 'sleep_stats', 'historical_sleep'].includes(activeTab) ? 'bg-indigo-600 text-white shadow-sm' : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700'"
-                                class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 border-b-2 border-indigo-500">
+                                class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 border-b-2 border-indigo-500">
                                 <i class="fa-solid fa-bed" :class="['sleep', 'sleep_stats', 'historical_sleep'].includes(activeTab) ? 'text-white' : 'text-indigo-500'"></i>
                                 <span>Sleep</span>
                                 <i class="fa-solid fa-chevron-down text-[10px] ml-0.5"></i>
                             </button>
-                            <div x-show="openNavMenu === 'sleep_group'" x-cloak class="absolute left-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-indigo-100 py-1.5 z-50">
-                                <button @click="switchTab('sleep'); openNavMenu = null" class="w-full text-left px-4 py-2 text-xs font-semibold text-indigo-950 hover:bg-indigo-50 flex items-center">
-                                    <i class="fa-solid fa-bed mr-2 text-indigo-500"></i> Sleep Logs
+                            <div x-show="openNavMenu === 'sleep_group'" x-cloak class="absolute left-0 top-full mt-2 w-60 bg-white rounded-2xl shadow-2xl border border-indigo-100 py-2 z-50">
+                                <button @click="switchTab('sleep'); openNavMenu = null" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-indigo-950 hover:bg-indigo-50 flex items-center transition">
+                                    <i class="fa-solid fa-bed mr-2.5 text-indigo-500 w-4"></i> Sleep Logs
                                 </button>
-                                <button @click="switchTab('sleep_stats'); openNavMenu = null" class="w-full text-left px-4 py-2 text-xs font-semibold text-indigo-950 hover:bg-indigo-50 flex items-center">
-                                    <i class="fa-solid fa-chart-bar mr-2 text-indigo-500"></i> Sleep Analytics
+                                <button @click="switchTab('sleep_stats'); openNavMenu = null" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-indigo-950 hover:bg-indigo-50 flex items-center transition">
+                                    <i class="fa-solid fa-chart-bar mr-2.5 text-indigo-500 w-4"></i> Sleep Analytics
                                 </button>
-                                <button @click="switchTab('historical_sleep'); openNavMenu = null" class="w-full text-left px-4 py-2 text-xs font-semibold text-indigo-950 hover:bg-indigo-50 flex items-center">
-                                    <i class="fa-solid fa-clock-rotate-left mr-2 text-indigo-500"></i> Historical Sleep Data
+                                <button @click="switchTab('historical_sleep'); openNavMenu = null" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-indigo-950 hover:bg-indigo-50 flex items-center transition">
+                                    <i class="fa-solid fa-clock-rotate-left mr-2.5 text-indigo-500 w-4"></i> Historical Sleep Data
                                 </button>
                             </div>
                         </div>
@@ -122,17 +122,17 @@
                         <div class="relative" @click.outside="if (openNavMenu === 'med_group') openNavMenu = null">
                             <button @click="openNavMenu = openNavMenu === 'med_group' ? null : 'med_group'"
                                 :class="['medicine', 'med_stats'].includes(activeTab) ? 'bg-emerald-600 text-white shadow-sm' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'"
-                                class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 border-b-2 border-emerald-500">
+                                class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 border-b-2 border-emerald-500">
                                 <i class="fa-solid fa-pills" :class="['medicine', 'med_stats'].includes(activeTab) ? 'text-white' : 'text-emerald-500'"></i>
                                 <span>Medicine</span>
                                 <i class="fa-solid fa-chevron-down text-[10px] ml-0.5"></i>
                             </button>
-                            <div x-show="openNavMenu === 'med_group'" x-cloak class="absolute left-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-emerald-100 py-1.5 z-50">
-                                <button @click="switchTab('medicine'); openNavMenu = null" class="w-full text-left px-4 py-2 text-xs font-semibold text-emerald-950 hover:bg-emerald-50 flex items-center">
-                                    <i class="fa-solid fa-pills mr-2 text-emerald-500"></i> Medicine Logs
+                            <div x-show="openNavMenu === 'med_group'" x-cloak class="absolute left-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-emerald-100 py-2 z-50">
+                                <button @click="switchTab('medicine'); openNavMenu = null" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-emerald-950 hover:bg-emerald-50 flex items-center transition">
+                                    <i class="fa-solid fa-pills mr-2.5 text-emerald-500 w-4"></i> Medicine Logs
                                 </button>
-                                <button @click="switchTab('med_stats'); openNavMenu = null" class="w-full text-left px-4 py-2 text-xs font-semibold text-emerald-950 hover:bg-emerald-50 flex items-center">
-                                    <i class="fa-solid fa-chart-pie mr-2 text-emerald-500"></i> Medicine Analytics
+                                <button @click="switchTab('med_stats'); openNavMenu = null" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-emerald-950 hover:bg-emerald-50 flex items-center transition">
+                                    <i class="fa-solid fa-chart-pie mr-2.5 text-emerald-500 w-4"></i> Medicine Analytics
                                 </button>
                             </div>
                         </div>
@@ -140,7 +140,7 @@
                         <!-- MEMO GROUP (Amber) -->
                         <button @click="switchTab('memo')"
                             :class="activeTab === 'memo' ? 'bg-amber-600 text-white shadow-sm' : 'bg-amber-50 hover:bg-amber-100 text-amber-700'"
-                            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 border-b-2 border-amber-500">
+                            class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 border-b-2 border-amber-500">
                             <i class="fa-solid fa-note-sticky" :class="activeTab === 'memo' ? 'text-white' : 'text-amber-500'"></i>
                             <span>Memo</span>
                         </button>
@@ -149,17 +149,17 @@
                         <div class="relative" @click.outside="if (openNavMenu === 'settings_group') openNavMenu = null">
                             <button @click="openNavMenu = openNavMenu === 'settings_group' ? null : 'settings_group'"
                                 :class="['settings', 'import'].includes(activeTab) ? 'bg-slate-700 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
-                                class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 border-b-2 border-slate-400">
+                                class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 border-b-2 border-slate-400">
                                 <i class="fa-solid fa-gear" :class="['settings', 'import'].includes(activeTab) ? 'text-white' : 'text-slate-500'"></i>
                                 <span>Settings</span>
                                 <i class="fa-solid fa-chevron-down text-[10px] ml-0.5"></i>
                             </button>
-                            <div x-show="openNavMenu === 'settings_group'" x-cloak class="absolute left-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-1.5 z-50">
-                                <button @click="switchTab('settings'); openNavMenu = null" class="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center">
-                                    <i class="fa-solid fa-gear mr-2 text-slate-500"></i> Settings
+                            <div x-show="openNavMenu === 'settings_group'" x-cloak class="absolute left-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 z-50">
+                                <button @click="switchTab('settings'); openNavMenu = null" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center transition">
+                                    <i class="fa-solid fa-gear mr-2.5 text-slate-500 w-4"></i> Settings
                                 </button>
-                                <button @click="switchTab('import'); openNavMenu = null" class="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center">
-                                    <i class="fa-solid fa-file-csv mr-2 text-slate-500"></i> CSV Import/Export
+                                <button @click="switchTab('import'); openNavMenu = null" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center transition">
+                                    <i class="fa-solid fa-file-csv mr-2.5 text-slate-500 w-4"></i> CSV Import/Export
                                 </button>
                             </div>
                         </div>
