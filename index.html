@@ -846,7 +846,6 @@
                     }
                 },
 
-                // Helper to format ISO UTC string to local datetime-local input string without shift
                 formatISOForDatetimeLocal(utcDateStr) {
                     if (!utcDateStr) return '';
                     try {
@@ -864,21 +863,37 @@
                 get avgSleep90Days() { return this.calculateAverageSleepDays(90); },
                 get avgSleepYear() { return this.calculateAverageSleepDays(365); },
                 get avgSleepAll() {
-                    const sleepLogs = this.logs.filter(l => l.category === 'sleep' && l.duration_minutes > 0);
-                    if (sleepLogs.length === 0) return '0 hrs 0 mins';
-                    const dates = [...new Set(sleepLogs.map(l => this.getLocalDateString(l.start_time)))];
-                    return this.formatDurationHoursMins(Math.round(sleepLogs.reduce((sum, l) => sum + l.duration_minutes, 0) / dates.length));
+                    const cleanLogs = this.deduplicateSleepLogs([...this.logs, ...this.allSleepLogsCache]);
+                    const splitSegments = this.splitSleepLogsAcrossMidnight(cleanLogs, 3650);
+                    if (splitSegments.length === 0) return '0 hrs 0 mins';
+                    
+                    const dailyTotals = {};
+                    splitSegments.forEach(seg => {
+                        dailyTotals[seg.dateStr] = (dailyTotals[seg.dateStr] || 0) + seg.durationMinutes;
+                    });
+                    
+                    const activeDays = Object.keys(dailyTotals).length;
+                    if (activeDays === 0) return '0 hrs 0 mins';
+                    const totalMinsAllDays = Object.values(dailyTotals).reduce((a, b) => a + b, 0);
+                    return this.formatDurationHoursMins(Math.round(totalMinsAllDays / activeDays));
                 },
 
                 calculateAverageSleepDays(daysCount) {
+                    const cleanLogs = this.deduplicateSleepLogs([...this.logs, ...this.allSleepLogsCache]);
+                    const splitSegments = this.splitSleepLogsAcrossMidnight(cleanLogs, daysCount);
+                    
                     let totalMins = 0, activeDays = 0;
                     for (let i = 0; i < daysCount; i++) {
                         let tzNow = new Date(new Date().toLocaleString('en-US', { timeZone: this.currentTimezone }));
                         tzNow.setDate(tzNow.getDate() - i);
                         const pad = (n) => String(n).padStart(2, '0');
                         let dateStr = `${tzNow.getFullYear()}-${pad(tzNow.getMonth()+1)}-${pad(tzNow.getDate())}`;
-                        let dayMins = this.logs.filter(l => l.category === 'sleep' && l.start_time && this.getLocalDateString(l.start_time) === dateStr).reduce((sum, l) => sum + (l.duration_minutes || 0), 0);
-                        if (dayMins > 0) { totalMins += dayMins; activeDays++; }
+                        
+                        let dayMins = splitSegments.filter(s => s.dateStr === dateStr).reduce((sum, s) => sum + s.durationMinutes, 0);
+                        if (dayMins > 0) {
+                            totalMins += dayMins;
+                            activeDays++;
+                        }
                     }
                     return activeDays === 0 ? '0 hrs 0 mins' : this.formatDurationHoursMins(Math.round(totalMins / activeDays));
                 },
