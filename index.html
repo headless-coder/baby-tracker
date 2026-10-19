@@ -424,7 +424,7 @@
                         <div class="bg-white p-5 rounded-2xl shadow-sm border border-amber-100 space-y-4">
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                 <div>
-                                    <h3 class="font-bold text-slate-800">Sleep Duration Trend (Preloaded 14 Days)</h3>
+                                    <h3 class="font-bold text-slate-800">Sleep Duration Trend</h3>
                                     <p class="text-xs text-slate-400">
                                         Displaying <span class="font-semibold text-indigo-600" x-text="sleepChartDaysWindow + ' Days (' + (sleepChartDaysWindow/7) + ' Week/s)'"></span>
                                     </p>
@@ -441,7 +441,7 @@
 
                             <!-- Custom Legend -->
                             <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-600 pt-1 border-t border-slate-100">
-                                <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#34d399] inline-block"></span><span>&ge; 8 hours total session (Green)</span></div>
+                                <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#34d399] inline-block"></span><span>&ge; 8 hours total daily sleep (Green)</span></div>
                                 <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#60a5fa] inline-block"></span><span>4 to 8 hours (Blue)</span></div>
                                 <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#fbbf24] inline-block"></span><span>1 to 4 hours (Yellow)</span></div>
                                 <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#f472b6] inline-block"></span><span>&lt; 1 hour (Light Pink)</span></div>
@@ -483,7 +483,7 @@
 
                             <!-- Custom Legend -->
                             <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-600 pt-1 border-t border-slate-100">
-                                <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#34d399] inline-block"></span><span>&ge; 8 hours total session (Green)</span></div>
+                                <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#34d399] inline-block"></span><span>&ge; 8 hours total daily sleep (Green)</span></div>
                                 <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#60a5fa] inline-block"></span><span>4 to 8 hours (Blue)</span></div>
                                 <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#fbbf24] inline-block"></span><span>1 to 4 hours (Yellow)</span></div>
                                 <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#f472b6] inline-block"></span><span>&lt; 1 hour (Light Pink)</span></div>
@@ -710,7 +710,7 @@
                 showEditModal: false,
                 editingLog: {},
 
-                sleepChartDaysWindow: 7,
+                sleepChartDaysWindow: 14,
                 historicalChartDaysWindow: 30,
 
                 switchTab(tabName) {
@@ -864,7 +864,7 @@
                 get avgSleepYear() { return this.calculateAverageSleepDays(365); },
                 get avgSleepAll() {
                     const cleanLogs = this.deduplicateSleepLogs([...this.logs, ...this.allSleepLogsCache]);
-                    const splitSegments = this.splitSleepLogsAcrossMidnight(cleanLogs, 3650);
+                    const splitSegments = this.splitSleepLogsAcrossMidnight(cleanLogs);
                     if (splitSegments.length === 0) return '0 hrs 0 mins';
                     
                     const dailyTotals = {};
@@ -880,7 +880,7 @@
 
                 calculateAverageSleepDays(daysCount) {
                     const cleanLogs = this.deduplicateSleepLogs([...this.logs, ...this.allSleepLogsCache]);
-                    const splitSegments = this.splitSleepLogsAcrossMidnight(cleanLogs, daysCount);
+                    const splitSegments = this.splitSleepLogsAcrossMidnight(cleanLogs);
                     
                     let totalMins = 0, activeDays = 0;
                     for (let i = 0; i < daysCount; i++) {
@@ -930,15 +930,17 @@
                     this.allSleepLogsCache = [];
                 },
 
+                // FETCH ALL LOGS (REMOVED ARTIFICIAL 14-DAY CUTOFF SO SEARCH & ALL HISTORICAL LOGS WORK FULLY)
                 async fetchLogs() {
-                    const cutoffDate = new Date();
-                    cutoffDate.setDate(cutoffDate.getDate() - 14);
-
-                    const { data } = await supabaseClient
+                    const { data, error } = await supabaseClient
                         .from('baby_logs')
                         .select('*')
-                        .gte('start_time', cutoffDate.toISOString())
                         .order('start_time', { ascending: false });
+                    
+                    if (error) {
+                        console.error('Error fetching logs:', error);
+                        return;
+                    }
                     this.logs = data || [];
                 },
 
@@ -1161,18 +1163,12 @@
                     return [...nonSleepLogs, ...deduplicatedSleepLogs];
                 },
 
-                splitSleepLogsAcrossMidnight(logsToSplit, daysBack) {
+                // SPLIT SLEEP LOGS ACROSS MIDNIGHT ACCORDING TO SELECTED TIMEZONE (CUTOFF REMOVED)
+                splitSleepLogsAcrossMidnight(logsToSplit) {
                     const splitSegments = [];
-                    const maxPreloadDate = new Date();
-                    maxPreloadDate.setDate(maxPreloadDate.getDate() - daysBack);
-
-                    const sleepLogs = logsToSplit.filter(l => l.category === 'sleep' && l.start_time && l.end_time && new Date(l.end_time) >= maxPreloadDate);
+                    const sleepLogs = logsToSplit.filter(l => l.category === 'sleep' && l.start_time && l.end_time);
 
                     sleepLogs.forEach(log => {
-                        const totalMins = log.duration_minutes || 0;
-                        const totalHours = totalMins / 60;
-                        let color = totalHours >= 8 ? '#34d399' : totalHours >= 4 ? '#60a5fa' : totalHours >= 1 ? '#fbbf24' : '#f472b6';
-
                         let currStart = new Date(log.start_time);
                         const end = new Date(log.end_time);
 
@@ -1184,10 +1180,11 @@
                             let segEnd = new Date(currStart.getTime() + (nextMidnight - tzStart));
                             if (segEnd > end) segEnd = end;
 
+                            const segMins = Math.max(1, Math.round((segEnd - currStart) / 60000));
+
                             splitSegments.push({
                                 dateStr: this.getLocalDateString(currStart.toISOString()),
-                                durationMinutes: Math.max(1, Math.round((segEnd - currStart) / 60000)),
-                                sourceColor: color
+                                durationMinutes: segMins
                             });
                             currStart = segEnd;
                         }
@@ -1205,7 +1202,7 @@
                     }
 
                     const cleanLogs = this.deduplicateSleepLogs(this.logs);
-                    const splitSegments = this.splitSleepLogsAcrossMidnight(cleanLogs, this.sleepChartDaysWindow);
+                    const splitSegments = this.splitSleepLogsAcrossMidnight(cleanLogs);
                     const daysCount = this.sleepChartDaysWindow;
                     const labels = [], dailyTotalMins = new Array(daysCount).fill(0);
                     const dailySegmentsMap = {}, datesList = [];
@@ -1237,15 +1234,20 @@
                     datesList.forEach((dStr, idx) => {
                         const segs = dailySegmentsMap[dStr] || [];
                         let daySum = 0;
+                        segs.forEach(s => { daySum += s.durationMinutes; });
+                        dailyTotalMins[idx] = daySum;
+
+                        const dayTotalHours = daySum / 60;
+                        const dayColor = dayTotalHours >= 8 ? '#34d399' : dayTotalHours >= 4 ? '#60a5fa' : dayTotalHours >= 1 ? '#fbbf24' : '#f472b6';
+
                         segs.forEach((seg, sIdx) => {
-                            daySum += seg.durationMinutes;
                             if (sIdx < maxSessions) {
                                 datasets[sIdx].data[idx] = parseFloat((seg.durationMinutes / 60).toFixed(2));
                                 datasets[sIdx].durationMinsArray[idx] = seg.durationMinutes;
-                                datasets[sIdx].backgroundColor[idx] = seg.sourceColor;
+                                datasets[sIdx].backgroundColor[idx] = dayColor;
                             }
                         });
-                        dailyTotalMins[idx] = daySum;
+
                         if ((daySum / 60) > maxHours) maxHours = Math.ceil(daySum / 60);
                     });
 
@@ -1263,11 +1265,11 @@
                                     callbacks: {
                                         title: (items) => {
                                             const total = dailyTotalMins[items[0].dataIndex];
-                                            return `${items[0].label} (Total: ${Math.floor(total/60)} hrs ${total%60} mins)`;
+                                            return `${items[0].label} (Daily Total: ${Math.floor(total/60)} hrs ${total%60} mins)`;
                                         },
                                         label: (context) => {
                                             const mins = context.dataset.durationMinsArray[context.dataIndex];
-                                            return mins ? ` Segment: ${Math.floor(mins/60)} hrs ${mins%60} mins` : '';
+                                            return mins ? ` Session Segment: ${Math.floor(mins/60)} hrs ${mins%60} mins` : '';
                                         }
                                     }
                                 }
@@ -1292,7 +1294,7 @@
                     const rawCombinedLogs = [...this.logs, ...this.allSleepLogsCache];
                     const cleanCombinedLogs = this.deduplicateSleepLogs(rawCombinedLogs);
 
-                    const splitSegments = this.splitSleepLogsAcrossMidnight(cleanCombinedLogs, this.historicalChartDaysWindow);
+                    const splitSegments = this.splitSleepLogsAcrossMidnight(cleanCombinedLogs);
                     const daysCount = this.historicalChartDaysWindow;
                     const labels = [], dailyTotalMins = new Array(daysCount).fill(0);
                     const dailySegmentsMap = {}, datesList = [];
@@ -1324,15 +1326,20 @@
                     datesList.forEach((dStr, idx) => {
                         const segs = dailySegmentsMap[dStr] || [];
                         let daySum = 0;
+                        segs.forEach(s => { daySum += s.durationMinutes; });
+                        dailyTotalMins[idx] = daySum;
+
+                        const dayTotalHours = daySum / 60;
+                        const dayColor = dayTotalHours >= 8 ? '#34d399' : dayTotalHours >= 4 ? '#60a5fa' : dayTotalHours >= 1 ? '#fbbf24' : '#f472b6';
+
                         segs.forEach((seg, sIdx) => {
-                            daySum += seg.durationMinutes;
                             if (sIdx < maxSessions) {
                                 datasets[sIdx].data[idx] = parseFloat((seg.durationMinutes / 60).toFixed(2));
                                 datasets[sIdx].durationMinsArray[idx] = seg.durationMinutes;
-                                datasets[sIdx].backgroundColor[idx] = seg.sourceColor;
+                                datasets[sIdx].backgroundColor[idx] = dayColor;
                             }
                         });
-                        dailyTotalMins[idx] = daySum;
+
                         if ((daySum / 60) > maxHours) maxHours = Math.ceil(daySum / 60);
                     });
 
@@ -1350,11 +1357,11 @@
                                     callbacks: {
                                         title: (items) => {
                                             const total = dailyTotalMins[items[0].dataIndex];
-                                            return `${items[0].label} (Total: ${Math.floor(total/60)} hrs ${total%60} mins)`;
+                                            return `${items[0].label} (Daily Total: ${Math.floor(total/60)} hrs ${total%60} mins)`;
                                         },
                                         label: (context) => {
                                             const mins = context.dataset.durationMinsArray[context.dataIndex];
-                                            return mins ? ` Segment: ${Math.floor(mins/60)} hrs ${mins%60} mins` : '';
+                                            return mins ? ` Session Segment: ${Math.floor(mins/60)} hrs ${mins%60} mins` : '';
                                         }
                                     }
                                 }
