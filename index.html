@@ -441,7 +441,7 @@
 
                             <!-- Custom Legend -->
                             <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-600 pt-1 border-t border-slate-100">
-                                <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#34d399] inline-block"></span><span>&ge; 8 hours total daily sleep (Green)</span></div>
+                                <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#34d399] inline-block"></span><span>&ge; 8 hours segment (Green)</span></div>
                                 <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#60a5fa] inline-block"></span><span>4 to 8 hours (Blue)</span></div>
                                 <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#fbbf24] inline-block"></span><span>1 to 4 hours (Yellow)</span></div>
                                 <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#f472b6] inline-block"></span><span>&lt; 1 hour (Light Pink)</span></div>
@@ -483,7 +483,7 @@
 
                             <!-- Custom Legend -->
                             <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-600 pt-1 border-t border-slate-100">
-                                <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#34d399] inline-block"></span><span>&ge; 8 hours total daily sleep (Green)</span></div>
+                                <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#34d399] inline-block"></span><span>&ge; 8 hours segment (Green)</span></div>
                                 <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#60a5fa] inline-block"></span><span>4 to 8 hours (Blue)</span></div>
                                 <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#fbbf24] inline-block"></span><span>1 to 4 hours (Yellow)</span></div>
                                 <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#f472b6] inline-block"></span><span>&lt; 1 hour (Light Pink)</span></div>
@@ -930,7 +930,6 @@
                     this.allSleepLogsCache = [];
                 },
 
-                // FETCH ALL LOGS (REMOVED ARTIFICIAL 14-DAY CUTOFF SO SEARCH & ALL HISTORICAL LOGS WORK FULLY)
                 async fetchLogs() {
                     const { data, error } = await supabaseClient
                         .from('baby_logs')
@@ -1163,7 +1162,6 @@
                     return [...nonSleepLogs, ...deduplicatedSleepLogs];
                 },
 
-                // SPLIT SLEEP LOGS ACROSS MIDNIGHT ACCORDING TO SELECTED TIMEZONE (CUTOFF REMOVED)
                 splitSleepLogsAcrossMidnight(logsToSplit) {
                     const splitSegments = [];
                     const sleepLogs = logsToSplit.filter(l => l.category === 'sleep' && l.start_time && l.end_time);
@@ -1181,10 +1179,13 @@
                             if (segEnd > end) segEnd = end;
 
                             const segMins = Math.max(1, Math.round((segEnd - currStart) / 60000));
+                            const segHours = segMins / 60;
+                            const segColor = segHours >= 8 ? '#34d399' : segHours >= 4 ? '#60a5fa' : segHours >= 1 ? '#fbbf24' : '#f472b6';
 
                             splitSegments.push({
                                 dateStr: this.getLocalDateString(currStart.toISOString()),
-                                durationMinutes: segMins
+                                durationMinutes: segMins,
+                                sourceColor: segColor
                             });
                             currStart = segEnd;
                         }
@@ -1237,14 +1238,11 @@
                         segs.forEach(s => { daySum += s.durationMinutes; });
                         dailyTotalMins[idx] = daySum;
 
-                        const dayTotalHours = daySum / 60;
-                        const dayColor = dayTotalHours >= 8 ? '#34d399' : dayTotalHours >= 4 ? '#60a5fa' : dayTotalHours >= 1 ? '#fbbf24' : '#f472b6';
-
                         segs.forEach((seg, sIdx) => {
                             if (sIdx < maxSessions) {
                                 datasets[sIdx].data[idx] = parseFloat((seg.durationMinutes / 60).toFixed(2));
                                 datasets[sIdx].durationMinsArray[idx] = seg.durationMinutes;
-                                datasets[sIdx].backgroundColor[idx] = dayColor;
+                                datasets[sIdx].backgroundColor[idx] = seg.sourceColor;
                             }
                         });
 
@@ -1269,7 +1267,7 @@
                                         },
                                         label: (context) => {
                                             const mins = context.dataset.durationMinsArray[context.dataIndex];
-                                            return mins ? ` Session Segment: ${Math.floor(mins/60)} hrs ${mins%60} mins` : '';
+                                            return mins ? ` Segment: ${Math.floor(mins/60)} hrs ${mins%60} mins` : '';
                                         }
                                     }
                                 }
@@ -1329,14 +1327,11 @@
                         segs.forEach(s => { daySum += s.durationMinutes; });
                         dailyTotalMins[idx] = daySum;
 
-                        const dayTotalHours = daySum / 60;
-                        const dayColor = dayTotalHours >= 8 ? '#34d399' : dayTotalHours >= 4 ? '#60a5fa' : dayTotalHours >= 1 ? '#fbbf24' : '#f472b6';
-
                         segs.forEach((seg, sIdx) => {
                             if (sIdx < maxSessions) {
                                 datasets[sIdx].data[idx] = parseFloat((seg.durationMinutes / 60).toFixed(2));
                                 datasets[sIdx].durationMinsArray[idx] = seg.durationMinutes;
-                                datasets[sIdx].backgroundColor[idx] = dayColor;
+                                datasets[sIdx].backgroundColor[idx] = seg.sourceColor;
                             }
                         });
 
@@ -1361,7 +1356,7 @@
                                         },
                                         label: (context) => {
                                             const mins = context.dataset.durationMinsArray[context.dataIndex];
-                                            return mins ? ` Session Segment: ${Math.floor(mins/60)} hrs ${mins%60} mins` : '';
+                                            return mins ? ` Segment: ${Math.floor(mins/60)} hrs ${mins%60} mins` : '';
                                         }
                                     }
                                 }
