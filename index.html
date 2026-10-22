@@ -420,6 +420,26 @@
                             </div>
                         </div>
 
+                        <!-- TODAY'S TOTAL SLEEP SUMMARY CARD (DIRECTLY ABOVE CHART WITH REFRESH BUTTON) -->
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-indigo-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                    <i class="fa-solid fa-clock text-lg"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-sm">Today's Total Sleep (Cutoff: 00:00)</h4>
+                                    <p class="text-xs text-slate-400" x-text="'Last refreshed as of: ' + todaySleepLastRefreshed"></p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4 w-full sm:w-auto justify-between sm:justify-end">
+                                <div class="text-lg font-bold text-indigo-600" x-text="todayTotalSleepDuration"></div>
+                                <button @click="refreshTodaySleep()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold px-3.5 py-2 rounded-xl transition flex items-center space-x-1.5">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                    <span>Refresh</span>
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- Stacked Sleep Chart & Windowing Controls -->
                         <div class="bg-white p-5 rounded-2xl shadow-sm border border-amber-100 space-y-4">
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -621,9 +641,21 @@
                         <input type="text" x-model="editingLog.category" disabled class="w-full text-xs px-3 py-2 border rounded-xl bg-slate-50 text-slate-500">
                     </div>
                     <template x-if="editingLog.category === 'medicine'">
-                        <div>
-                            <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Medicine Name</label>
-                            <input type="text" x-model="editingLog.title" class="w-full text-xs px-3 py-2 border rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Medicine Name</label>
+                                <input type="text" x-model="editingLog.title" class="w-full text-xs px-3 py-2 border rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                            </div>
+                            <div class="flex space-x-2">
+                                <div class="w-1/2">
+                                    <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Amount</label>
+                                    <input type="number" step="0.1" x-model="editingLog.amount" class="w-full text-xs px-3 py-2 border rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                </div>
+                                <div class="w-1/2">
+                                    <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Unit</label>
+                                    <input type="text" x-model="editingLog.unit" class="w-full text-xs px-3 py-2 border rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                </div>
+                            </div>
                         </div>
                     </template>
                     <div>
@@ -713,11 +745,15 @@
                 sleepChartDaysWindow: 14,
                 historicalChartDaysWindow: 30,
 
+                todayTotalSleepDuration: '0 hrs 0 mins',
+                todaySleepLastRefreshed: '--:--',
+
                 switchTab(tabName) {
                     this.activeTab = tabName;
                     this.renderedTabs[tabName] = true;
 
                     if (tabName === 'sleep_stats') {
+                        this.refreshTodaySleep();
                         this.$nextTick(() => {
                             setTimeout(() => this.renderSleepChart(), 40);
                         });
@@ -731,6 +767,24 @@
                         this.$nextTick(() => {
                             setTimeout(() => this.renderMedChart(), 40);
                         });
+                    }
+                },
+
+                refreshTodaySleep() {
+                    try {
+                        const allCleanLogs = this.deduplicateSleepLogs([...this.logs, ...this.allSleepLogsCache]);
+                        const splitSegments = this.splitSleepLogsAcrossMidnight(allCleanLogs);
+                        
+                        let tzNow = new Date(new Date().toLocaleString('en-US', { timeZone: this.currentTimezone }));
+                        const pad = (n) => String(n).padStart(2, '0');
+                        let todayStr = `${tzNow.getFullYear()}-${pad(tzNow.getMonth()+1)}-${pad(tzNow.getDate())}`;
+
+                        let todayMins = splitSegments.filter(s => s.dateStr === todayStr).reduce((sum, s) => sum + s.durationMinutes, 0);
+                        this.todayTotalSleepDuration = this.formatDurationHoursMins(todayMins);
+                        this.todaySleepLastRefreshed = new Date().toLocaleTimeString([], { timeZone: this.currentTimezone, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    } catch (e) {
+                        this.todayTotalSleepDuration = '0 hrs 0 mins';
+                        this.todaySleepLastRefreshed = new Date().toLocaleTimeString();
                     }
                 },
 
@@ -769,6 +823,7 @@
 
                 saveTimezonePreference() {
                     localStorage.setItem('baby_tz', this.currentTimezone);
+                    this.refreshTodaySleep();
                     if (this.renderedTabs['sleep_stats']) this.renderSleepChart();
                     if (this.renderedTabs['historical_sleep']) this.renderHistoricalChart();
                 },
@@ -907,10 +962,18 @@
 
                     const { data } = await supabaseClient.auth.getUser();
                     this.user = data.user;
-                    if (this.user) await this.fetchLogs();
+                    if (this.user) {
+                        await this.fetchLogs();
+                        await this.fetchHistoricalSleepLogs();
+                        this.refreshTodaySleep();
+                    }
                     supabaseClient.auth.onAuthStateChange(async (event, session) => {
                         this.user = session?.user || null;
-                        if (this.user) await this.fetchLogs();
+                        if (this.user) {
+                            await this.fetchLogs();
+                            await this.fetchHistoricalSleepLogs();
+                            this.refreshTodaySleep();
+                        }
                     });
                 },
 
@@ -1013,6 +1076,7 @@
                     this.manualSleepIsRunning = false;
                     this.sleepNote = '';
                     await this.fetchLogs();
+                    this.refreshTodaySleep();
                     if (this.renderedTabs['sleep_stats']) this.renderSleepChart();
                 },
 
@@ -1059,6 +1123,7 @@
 
                     if (error) { alert('Error stopping timer: ' + error.message); return; }
                     await this.fetchLogs();
+                    this.refreshTodaySleep();
                     if (this.renderedTabs['sleep_stats']) this.renderSleepChart();
                 },
 
@@ -1067,7 +1132,8 @@
                     const { error } = await supabaseClient.from('baby_logs').delete().eq('id', id);
                     if (error) { alert('Error deleting log: ' + error.message); return; }
                     await this.fetchLogs();
-                    if (this.renderedTabs['historical_sleep']) await this.fetchHistoricalSleepLogs();
+                    await this.fetchHistoricalSleepLogs();
+                    this.refreshTodaySleep();
                     if (this.renderedTabs['sleep_stats']) this.renderSleepChart();
                     if (this.renderedTabs['historical_sleep']) this.renderHistoricalChart();
                 },
@@ -1077,7 +1143,8 @@
                     const { error } = await supabaseClient.from('baby_logs').delete().eq('category', category);
                     if (error) { alert('Error deleting logs: ' + error.message); return; }
                     await this.fetchLogs();
-                    if (this.renderedTabs['historical_sleep']) await this.fetchHistoricalSleepLogs();
+                    await this.fetchHistoricalSleepLogs();
+                    this.refreshTodaySleep();
                     if (this.renderedTabs['sleep_stats']) this.renderSleepChart();
                     if (this.renderedTabs['historical_sleep']) this.renderHistoricalChart();
                 },
@@ -1091,7 +1158,11 @@
 
                 async saveEditModal() {
                     const updates = { notes: this.editingLog.notes };
-                    if (this.editingLog.title !== undefined) updates.title = this.editingLog.title;
+                    if (this.editingLog.category === 'medicine') {
+                        if (this.editingLog.title !== undefined) updates.title = this.editingLog.title;
+                        if (this.editingLog.amount !== undefined) updates.amount = this.editingLog.amount !== '' ? parseFloat(this.editingLog.amount) : null;
+                        if (this.editingLog.unit !== undefined) updates.unit = this.editingLog.unit;
+                    }
                     if (this.editingLog.formatted_start) updates.start_time = new Date(this.editingLog.formatted_start).toISOString();
                     
                     if (this.editingLog.category === 'sleep' && this.editingLog.formatted_end) {
@@ -1105,6 +1176,8 @@
 
                     this.showEditModal = false;
                     await this.fetchLogs();
+                    await this.fetchHistoricalSleepLogs();
+                    this.refreshTodaySleep();
                     if (this.renderedTabs['historical_sleep']) await this.fetchHistoricalSleepLogs();
                     if (this.renderedTabs['sleep_stats']) this.renderSleepChart();
                     if (this.renderedTabs['historical_sleep']) this.renderHistoricalChart();
@@ -1164,11 +1237,14 @@
 
                 splitSleepLogsAcrossMidnight(logsToSplit) {
                     const splitSegments = [];
-                    const sleepLogs = logsToSplit.filter(l => l.category === 'sleep' && l.start_time && l.end_time);
+                    const now = new Date();
+                    
+                    const sleepLogs = logsToSplit.filter(l => l.category === 'sleep' && l.start_time);
 
                     sleepLogs.forEach(log => {
                         let currStart = new Date(log.start_time);
-                        const end = new Date(log.end_time);
+                        let end = log.end_time ? new Date(log.end_time) : now; // include running sleep logs up to current moment
+                        if (end < currStart) end = now;
 
                         while (currStart < end) {
                             const tzStart = new Date(currStart.toLocaleString('en-US', { timeZone: this.currentTimezone }));
@@ -1202,7 +1278,7 @@
                         window.sleepChartInstance = null;
                     }
 
-                    const cleanLogs = this.deduplicateSleepLogs(this.logs);
+                    const cleanLogs = this.deduplicateSleepLogs([...this.logs, ...this.allSleepLogsCache]);
                     const splitSegments = this.splitSleepLogsAcrossMidnight(cleanLogs);
                     const daysCount = this.sleepChartDaysWindow;
                     const labels = [], dailyTotalMins = new Array(daysCount).fill(0);
