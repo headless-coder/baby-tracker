@@ -397,26 +397,41 @@
                 <!-- TAB: SLEEP ANALYTICS CHART & AVERAGES -->
                 <template x-if="renderedTabs['sleep_stats']">
                     <div x-show="activeTab === 'sleep_stats'" class="space-y-6">
-                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                            <div class="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100">
-                                <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (7 Days)</div>
-                                <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleep7Days"></div>
+                        <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                            <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-indigo-100 flex flex-col justify-between">
+                                <div>
+                                    <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (7 Days)</div>
+                                    <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleep7Days.avg"></div>
+                                </div>
+                                <div class="text-[10px] text-slate-400 font-medium mt-2 pt-2 border-t border-slate-50" x-text="avgSleep7Days.range"></div>
                             </div>
-                            <div class="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100">
-                                <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (30 Days)</div>
-                                <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleep30Days"></div>
+                            <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-indigo-100 flex flex-col justify-between">
+                                <div>
+                                    <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (30 Days)</div>
+                                    <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleep30Days.avg"></div>
+                                </div>
+                                <div class="text-[10px] text-slate-400 font-medium mt-2 pt-2 border-t border-slate-50" x-text="avgSleep30Days.range"></div>
                             </div>
-                            <div class="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100">
-                                <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (90 Days)</div>
-                                <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleep90Days"></div>
+                            <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-indigo-100 flex flex-col justify-between">
+                                <div>
+                                    <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (90 Days)</div>
+                                    <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleep90Days.avg"></div>
+                                </div>
+                                <div class="text-[10px] text-slate-400 font-medium mt-2 pt-2 border-t border-slate-50" x-text="avgSleep90Days.range"></div>
                             </div>
-                            <div class="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100">
-                                <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (Last Year)</div>
-                                <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleepYear"></div>
+                            <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-indigo-100 flex flex-col justify-between">
+                                <div>
+                                    <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (Last Year)</div>
+                                    <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleepYear.avg"></div>
+                                </div>
+                                <div class="text-[10px] text-slate-400 font-medium mt-2 pt-2 border-t border-slate-50" x-text="avgSleepYear.range"></div>
                             </div>
-                            <div class="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100">
-                                <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (All Time)</div>
-                                <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleepAll"></div>
+                            <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-indigo-100 flex flex-col justify-between">
+                                <div>
+                                    <div class="text-[10px] font-semibold text-slate-400 uppercase">Avg (All Time)</div>
+                                    <div class="text-base font-bold text-indigo-600 mt-1" x-text="avgSleepAll.avg"></div>
+                                </div>
+                                <div class="text-[10px] text-slate-400 font-medium mt-2 pt-2 border-t border-slate-50" x-text="avgSleepAll.range"></div>
                             </div>
                         </div>
 
@@ -920,17 +935,26 @@
                 get avgSleepAll() {
                     const cleanLogs = this.deduplicateSleepLogs([...this.logs, ...this.allSleepLogsCache]);
                     const splitSegments = this.splitSleepLogsAcrossMidnight(cleanLogs);
-                    if (splitSegments.length === 0) return '0 hrs 0 mins';
+                    if (splitSegments.length === 0) return { avg: '0 hrs 0 mins', range: 'No active logs' };
                     
                     const dailyTotals = {};
                     splitSegments.forEach(seg => {
                         dailyTotals[seg.dateStr] = (dailyTotals[seg.dateStr] || 0) + seg.durationMinutes;
                     });
                     
-                    const activeDays = Object.keys(dailyTotals).length;
-                    if (activeDays === 0) return '0 hrs 0 mins';
+                    const activeDaysKeys = Object.keys(dailyTotals).sort();
+                    if (activeDaysKeys.length === 0) return { avg: '0 hrs 0 mins', range: 'No active logs' };
+                    
                     const totalMinsAllDays = Object.values(dailyTotals).reduce((a, b) => a + b, 0);
-                    return this.formatDurationHoursMins(Math.round(totalMinsAllDays / activeDays));
+                    const avgVal = this.formatDurationHoursMins(Math.round(totalMinsAllDays / activeDaysKeys.length));
+                    
+                    const formatDateLabel = (dStr) => {
+                        const parts = dStr.split('-');
+                        const d = new Date(parts[0], parts[1] - 1, parts[2]);
+                        return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+                    };
+                    const rangeVal = `${formatDateLabel(activeDaysKeys[0])} – ${formatDateLabel(activeDaysKeys[activeDaysKeys.length - 1])}`;
+                    return { avg: avgVal, range: rangeVal };
                 },
 
                 calculateAverageSleepDays(daysCount) {
@@ -938,7 +962,9 @@
                     const splitSegments = this.splitSleepLogsAcrossMidnight(cleanLogs);
                     
                     let totalMins = 0, activeDays = 0;
-                    for (let i = 0; i < daysCount; i++) {
+                    let rangeDates = [];
+                    
+                    for (let i = daysCount - 1; i >= 0; i--) {
                         let tzNow = new Date(new Date().toLocaleString('en-US', { timeZone: this.currentTimezone }));
                         tzNow.setDate(tzNow.getDate() - i);
                         const pad = (n) => String(n).padStart(2, '0');
@@ -948,9 +974,19 @@
                         if (dayMins > 0) {
                             totalMins += dayMins;
                             activeDays++;
+                            rangeDates.push(tzNow);
                         }
                     }
-                    return activeDays === 0 ? '0 hrs 0 mins' : this.formatDurationHoursMins(Math.round(totalMins / activeDays));
+
+                    const avgVal = activeDays === 0 ? '0 hrs 0 mins' : this.formatDurationHoursMins(Math.round(totalMins / activeDays));
+                    
+                    let rangeVal = 'No records in range';
+                    if (rangeDates.length > 0) {
+                        const formatDateLabel = (d) => d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+                        rangeVal = `${formatDateLabel(rangeDates[0])} – ${formatDateLabel(rangeDates[rangeDates.length - 1])}`;
+                    }
+
+                    return { avg: avgVal, range: rangeVal };
                 },
 
                 async init() {
@@ -1243,7 +1279,7 @@
 
                     sleepLogs.forEach(log => {
                         let currStart = new Date(log.start_time);
-                        let end = log.end_time ? new Date(log.end_time) : now; // include running sleep logs up to current moment
+                        let end = log.end_time ? new Date(log.end_time) : now;
                         if (end < currStart) end = now;
 
                         while (currStart < end) {
