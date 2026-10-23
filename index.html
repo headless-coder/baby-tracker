@@ -476,7 +476,7 @@
 
                             <!-- Custom Legend -->
                             <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-600 pt-1 border-t border-slate-100">
-                                <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#34d399] inline-block"></span><span>&ge; 8 hours segment (Green)</span></div>
+                                <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#34d399] inline-block"></span><span>&ge; 8 hours total duration (Green)</span></div>
                                 <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#60a5fa] inline-block"></span><span>4 to 8 hours (Blue)</span></div>
                                 <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#fbbf24] inline-block"></span><span>1 to 4 hours (Yellow)</span></div>
                                 <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#f472b6] inline-block"></span><span>&lt; 1 hour (Light Pink)</span></div>
@@ -518,7 +518,7 @@
 
                             <!-- Custom Legend -->
                             <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-600 pt-1 border-t border-slate-100">
-                                <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#34d399] inline-block"></span><span>&ge; 8 hours segment (Green)</span></div>
+                                <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#34d399] inline-block"></span><span>&ge; 8 hours total duration (Green)</span></div>
                                 <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#60a5fa] inline-block"></span><span>4 to 8 hours (Blue)</span></div>
                                 <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#fbbf24] inline-block"></span><span>1 to 4 hours (Yellow)</span></div>
                                 <div class="flex items-center space-x-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#f472b6] inline-block"></span><span>&lt; 1 hour (Light Pink)</span></div>
@@ -937,9 +937,15 @@
                     const splitSegments = this.splitSleepLogsAcrossMidnight(cleanLogs);
                     if (splitSegments.length === 0) return { avg: '0 hrs 0 mins', range: 'No active logs' };
                     
+                    let tzNow = new Date(new Date().toLocaleString('en-US', { timeZone: this.currentTimezone }));
+                    const pad = (n) => String(n).padStart(2, '0');
+                    let todayStr = `${tzNow.getFullYear()}-${pad(tzNow.getMonth()+1)}-${pad(tzNow.getDate())}`;
+
                     const dailyTotals = {};
                     splitSegments.forEach(seg => {
-                        dailyTotals[seg.dateStr] = (dailyTotals[seg.dateStr] || 0) + seg.durationMinutes;
+                        if (seg.dateStr !== todayStr) {
+                            dailyTotals[seg.dateStr] = (dailyTotals[seg.dateStr] || 0) + seg.durationMinutes;
+                        }
                     });
                     
                     const activeDaysKeys = Object.keys(dailyTotals).sort();
@@ -964,7 +970,7 @@
                     let totalMins = 0, activeDays = 0;
                     let rangeDates = [];
                     
-                    for (let i = daysCount - 1; i >= 0; i--) {
+                    for (let i = daysCount; i >= 1; i--) {
                         let tzNow = new Date(new Date().toLocaleString('en-US', { timeZone: this.currentTimezone }));
                         tzNow.setDate(tzNow.getDate() - i);
                         const pad = (n) => String(n).padStart(2, '0');
@@ -1282,6 +1288,10 @@
                         let end = log.end_time ? new Date(log.end_time) : now;
                         if (end < currStart) end = now;
 
+                        let totalLogMinutes = Math.max(1, Math.round((end - currStart) / 60000));
+                        let totalLogHours = totalLogMinutes / 60;
+                        let parentColor = totalLogHours >= 8 ? '#34d399' : totalLogHours >= 4 ? '#60a5fa' : totalLogHours >= 1 ? '#fbbf24' : '#f472b6';
+
                         while (currStart < end) {
                             const tzStart = new Date(currStart.toLocaleString('en-US', { timeZone: this.currentTimezone }));
                             const nextMidnight = new Date(tzStart);
@@ -1291,13 +1301,11 @@
                             if (segEnd > end) segEnd = end;
 
                             const segMins = Math.max(1, Math.round((segEnd - currStart) / 60000));
-                            const segHours = segMins / 60;
-                            const segColor = segHours >= 8 ? '#34d399' : segHours >= 4 ? '#60a5fa' : segHours >= 1 ? '#fbbf24' : '#f472b6';
 
                             splitSegments.push({
                                 dateStr: this.getLocalDateString(currStart.toISOString()),
                                 durationMinutes: segMins,
-                                sourceColor: segColor
+                                sourceColor: parentColor
                             });
                             currStart = segEnd;
                         }
